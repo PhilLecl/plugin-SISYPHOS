@@ -1,0 +1,50 @@
+
+fap2{
+  element_string = ""
+  .type = str
+  
+  adjustment_eV = ""
+  .type = str
+
+  resolution = 0.0
+  .type = float
+
+  use_nos2 = False
+  .type = bool
+
+  perform_disp_ref = False
+  .type = bool
+
+  benchmark_mode = False
+  .type = bool
+
+  henke = False
+  .type = bool
+
+  sasaki = False
+  .type = bool
+
+  brennan = False
+  .type = bool
+
+  energies_from_headers = False
+  .type = bool
+
+  energies_from_ins = False
+  .type = bool
+
+  same_disp = False
+  .type = bool
+
+  indiv_disp = False
+  .type = bool
+
+  gui{
+    location = 'tools'
+      .type = str
+      .help = The tab item where the FAP GUI shall appear.
+    before = 'images'
+      .type = str
+      .help = The tool before which the FAP GUI shall appear.
+    }
+}

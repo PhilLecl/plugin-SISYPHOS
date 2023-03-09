@@ -1,0 +1,254 @@
+<!-- #include tool-top gui/blocks/tool-top.htm;image=#image;onclick=#onclick;1; -->
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=FAP_1; help_ext=FAP_1;1; -->
+<td ALIGN='left' width='100%'>
+    <b>Welcome to FAP2!</b>
+    <br>
+     Please choose a directory in which your data and your structure 
+     solution is stored in. Please give the atoms for which you want 
+     to refine dispersion values below. You can also give a correction 
+     for the read-in energy values derived from your measurement folders. 
+     Good luck!
+</td>
+
+<!-- #ignoreif not spy.GetParam('fap2.benchmark_mode')
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=FAP_2; help_ext=FAP_2;1; -->
+<td ALIGN='left' width='33%'>
+    <b><a href="spy.FAP2.setBasePath()">Set working dir</a>
+</td>
+<td ALIGN='center' width='33%'>
+    <b><a href="spy.FAP2.setSolutionPath()">Set solution .ins</a>
+</td>
+<td ALIGN='right' width='34%'>
+    <b><a href="spy.FAP2.setBenchmarkFile()">Set benchmark file</a>
+</td>
+#ignoreif -->
+
+<!-- #ignoreif spy.GetParam('fap2.benchmark_mode')
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=FAP_2; help_ext=FAP_2;1; -->
+<td ALIGN='left' width='50%'>
+    <b><a href="spy.FAP2.setBasePath()">Set working dir</a>
+</td>
+<td ALIGN='left' width='50%'>
+    <b><a href="spy.FAP2.setSolutionPath()">Set solution .ins</a>
+</td>
+#ignoreif -->
+
+<!-- #ignoreif not spy.GetParam('fap2.perform_disp_ref')
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name='PATH';help_ext=Path;1 -->
+<td width='23%'>
+    <b>%Elements%:</b>
+</td>
+
+<td align='left'>
+    $+
+    html.Snippet("gui/snippets/input-text",
+    "name=element_string",
+    "width=100%",
+    "value=spy.GetParam('fap2.element_string')",
+    "onchange=spy.SetParam('fap2.element_string', html.GetValue('~name~'))")
+    $-
+</td>
+
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name='PATH';help_ext=Path;1 -->
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Same DISP",
+    "label=Same DISP",
+    "checked=spy.GetParam('fap2.same_disp')",
+    "oncheck=spy.SetParam('fap2.same_disp','True')>>spy.SetParam('fap2.indiv_disp','False')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('fap2.same_disp','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Individual DISP",
+    "label=Individual DISP",
+    "checked=spy.GetParam('fap2.indiv_disp')",
+    "oncheck=spy.SetParam('fap2.indiv_disp','True')>>spy.SetParam('fap2.same_disp','False') >>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('fap2.indiv_disp','False')>>html.Update()"
+    )
+  $-
+</td>
+
+#ignoreif -->
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=FAP_2;help_ext=Path;1 -->
+<td width='23%'>
+    <b>%Adjustment / eV%:</b>
+</td>
+<td align='left'>
+    $+
+    html.Snippet("gui/snippets/input-text",
+    "name=adjustment_eV",
+    "width=100%",
+    "value=spy.GetParam('fap2.adjustment_eV')",
+    "onchange=spy.SetParam('fap2.adjustment_eV', html.GetValue('~name~'))")
+    $-
+</td>
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=FAP_2;help_ext=Path;1 -->
+<td width='23%'>
+    <b>%Resolution / Angstroms%:</b>
+</td>
+<td align='left'>
+    $+
+    html.Snippet("gui/snippets/input-text",
+    "name=adjustment",
+    "width=100%",
+    "value=spy.GetParam('fap2.resulution')",
+    "onchange=spy.SetParam('fap2.resolution', html.GetValue('~name~'))")
+    $-
+</td>
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=FAP_2; help_ext=FAP_2;1; -->
+<td width='2%' align="left">
+    $+
+      html.Snippet("gui/snippets/input-checkbox-td",
+      "name=Use NoSpherA2",
+      "label=Use NoSpherA2",
+      "checked=spy.GetParam('fap2.use_nos2')",
+      "oncheck=spy.SetParam('fap2.use_nos2','True')>>spy.SetParam('snum.NoSpherA2.Calculate', 'True')>>spy.SetParam('snum.NoSpherA2.source','ORCA 5.0')>>html.Update()",
+      "bgcolor=GetVar(HtmlTableRowBgColour)",
+      "onuncheck=spy.SetParam('fap2.use_nos2','False')>>html.Update()"
+      )
+    $-
+  </td>
+<td width='2%' align="left">
+    $+
+      html.Snippet("gui/snippets/input-checkbox-td",
+      "name=Benchmark Mode",
+      "label=Benchmark Mode",
+      "checked=spy.GetParam('fap2.benchmark_mode')",
+      "oncheck=spy.SetParam('fap2.benchmark_mode','True')>>html.Update()",
+      "bgcolor=GetVar(HtmlTableRowBgColour)",
+      "onuncheck=spy.SetParam('fap2.benchmark_mode','False')>>html.Update()"
+      )
+    $-
+  </td>
+<td width='2%' align="left">
+    $+
+      html.Snippet("gui/snippets/input-checkbox-td",
+      "name=DISP Refinement",
+      "label=DISP Refinement",
+      "checked=spy.GetParam('fap2.perform_disp_ref')",
+      "oncheck=spy.SetParam('fap2.perform_disp_ref','True')>>html.Update()",
+      "bgcolor=GetVar(HtmlTableRowBgColour)",
+      "onuncheck=spy.SetParam('fap2.perform_disp_ref','False')>>html.Update()"
+      )
+    $-
+</td>
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+
+<!-- #ignoreif not spy.GetParam('fap2.use_nos2')
+<!-- #include h3-refine_NoSpherA2FAP $GetVar(FAP_plugin_path)\h3-refine_NoSpherA2FAP.htm;gui\blocks\tool-h3-off.htm;image=h3-Refine_NoSpherA2;onclick=;colspan=1;2; -->
+#ignoreif -->
+
+
+<!-- #ignoreif not spy.GetParam('fap2.perform_disp_ref')
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=FAP_2; help_ext=FAP_2;1; -->
+<td width='2%' align="left">
+    $+
+      html.Snippet("gui/snippets/input-checkbox-td",
+      "name=Refined DISPs",
+      "label=Refined DISPs",
+      "checked=spy.GetParam('fap2.refine_disps')",
+      "oncheck=spy.SetParam('fap2.refine_disps','True')>>html.Update()",
+      "bgcolor=GetVar(HtmlTableRowBgColour)",
+      "onuncheck=spy.SetParam('fap2.refine_disps','False')>>html.Update()"
+      )
+    $-
+  </td>
+<td width='2%' align="left">
+    $+
+      html.Snippet("gui/snippets/input-checkbox-td",
+      "name=Henke",
+      "label=Henke",
+      "checked=spy.GetParam('fap2.henke')",
+      "oncheck=spy.SetParam('fap2.henke','True')>>html.Update()",
+      "bgcolor=GetVar(HtmlTableRowBgColour)",
+      "onuncheck=spy.SetParam('fap2.henke','False')>>html.Update()"
+      )
+    $-
+  </td>
+<td width='2%' align="left">
+    $+
+      html.Snippet("gui/snippets/input-checkbox-td",
+      "name=Sasaki",
+      "label=Sasaki",
+      "checked=spy.GetParam('fap2.sasaki')",
+      "oncheck=spy.SetParam('fap2.sasaki','True')>>html.Update()",
+      "bgcolor=GetVar(HtmlTableRowBgColour)",
+      "onuncheck=spy.SetParam('fap2.sasaki','False')>>html.Update()"
+      )
+    $-
+</td>
+<td width='2%' align="left">
+    $+
+      html.Snippet("gui/snippets/input-checkbox-td",
+      "name=Brennan",
+      "label=Brennan",
+      "checked=spy.GetParam('fap2.brennan')",
+      "oncheck=spy.SetParam('fap2.brennan','True')>>html.Update()",
+      "bgcolor=GetVar(HtmlTableRowBgColour)",
+      "onuncheck=spy.SetParam('fap2.brennan','False')>>html.Update()"
+      )
+    $-
+</td>
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+#ignoreif -->
+
+
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=FAP_2; help_ext=FAP_2;1; -->
+<td width='2%' align="center">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Extract energies from file names",
+    "label=Extract energies from file names",
+    "checked=spy.GetParam('fap2.energies_from_headers')",
+    "oncheck=spy.SetParam('fap2.energies_from_headers','True')>>spy.SetParam('fap2.energies_from_ins','False')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('fap2.energies_from_headers','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="center">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Extract energies from .ins",
+    "label=Extract energies from .ins",
+    "checked=spy.GetParam('fap2.energies_from_ins')",
+    "oncheck=spy.SetParam('fap2.energies_from_headers','False')>>spy.SetParam('fap2.energies_from_ins','True') >>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('fap2.energies_from_ins','False')>>html.Update()"
+    )
+  $-
+</td>
+If ticked, files must be of "NAME_ENERGY type" and every .hkl file MUST be accompanied by a .ins file with the same name
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+
+
+
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=FAP_2; help_ext=FAP_2;1; -->
+$+
+html.Snippet("gui/snippets/gui-link-button",
+"value='Start'",
+"onclick=spy.FAP2.print_formula()",
+"bgcolor=GetVar(HtmlTableRowBgColour)",
+"td1=<td width="29%" align='center'>
+",)
+$-
+
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+<!-- #include h3-FAP-extras $GetVar(FAP_plugin_path)\h3-FAP-extras.htm;gui\blocks\tool-h3-off.htm;image=h3-FAP_extras;onclick=;colspan=1;2; -->
+<!-- #include tool-footer gui/blocks/tool-footer.htm;colspan=2;1; -->

@@ -1,0 +1,5 @@
+
+  p_name = FAP2
+  p_htm = FAP2
+  p_img = [("FAP2",'h1'), ("FAP2-Extras",'h3')]
+  p_scope = fap2
