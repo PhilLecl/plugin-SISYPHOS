@@ -11,7 +11,6 @@ import olx
 import gui
 import re
 import shutil
-import pandas as pd
 import sys
 from return_WL_energy import ret_wl
 from time import sleep
@@ -285,13 +284,14 @@ class FAPJob:                                   # one FAPjob manages the refinem
             buffer = line.split(" ")
             buffer[1] = str(round(wl, 6))
             line = " ".join(buffer)
-          out.write(line)     
+          out.write(line)
       self.correct_ins()      
       self.final_ins_path = f"{self.base_path}/{self.name}.ins"
         
     def setupInsIns(self):
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
+      
       with open(self.solution_name, "r") as inp, open(old_ins, "r") as old_inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
         cell = ""
         for line in old_inp:
@@ -341,7 +341,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth("Failed to init the .ins, filesize = 0!")
         return
       self.log_sth("Finished Setup of INS")
-      self.refine()
+      #self.refine()
+      print(self.solution_name)
       self.log_sth("Finished Refinement")
       try:
         self.extract_info()
@@ -379,6 +380,7 @@ class FAP2(PT):
     self.indiv_disp = False
     self.same_disp = True
     self.nos2_dict = {}
+    self.outdir = ""
     if not from_outside:
       self.setup_gui()
     OV.registerFunction(self.print_formula,True,"FAP2")
@@ -406,7 +408,7 @@ class FAP2(PT):
     self.solution_path = "\\".join(buffer)
     print(f"Your solution lies at:\n{'/'.join(buffer)} with name {self.ins_name}")
     
-  def prepare(self):      #Searches for all hkls, makes output dirs and returns the names and locations as dict
+  def prepare(self):  #new version 30.05.2023
     hkls_paths = {}
     joblist = []
     elements = self.elem_string.split(",")
@@ -414,165 +416,177 @@ class FAP2(PT):
       for file in files:
         if "FAPoutput" in paths:
           continue
-        if ".hkl" in file:
+        elif "olex2" in paths:
+          continue
+        if file.split(".")[-1] == "hkl":
           name = file.split(".")[0]
           hkls_paths[f"{name}"] = os.path.join(paths,file)
-      
-    i = 1
-    while os.path.exists(f"{self.base_path}/FAPoutput"+str(i)):
-      i += 1
-    outdir = f"{self.base_path}\\FAPoutput"+str(i)
-    os.mkdir(outdir)
-    self.output_base_path = outdir                #set the output base path to this outdir
+          
+    self.prepare_outdir()
+    
     if self.energies_from_headers:
       energy_source = "header"
     elif self.energy_from_ins:
       energy_source = "ins"
     else:
       energy_source = "solution"
-    for key in hkls_paths:                        #create a dir for every hkl file in the output folder and copy the hkl plus the template ins there
+      
+    for hkl in hkls_paths:
       nos2_dict_cp = self.nos2_dict.copy()
-      if self.perform_disp_ref:                   # check if dispersion should be refined and create folders for each source accordingly
-        disp_sources = ["refined"]
-        indiv_disps = False
-        if self.indiv_disp:
-          indiv_disps = True          
-        if self.henke:
-          disp_sources.append("henke")
-        if self.sasaki:
-          disp_sources.append("sasaki")
-        if self.brennan:
-          disp_sources.append("brennan")
-        for disp_source in disp_sources:  
-            if self.benchmark:                              #also check if a benchmark regarding functionals/methods should be performed
-              with open(self.benchmarkfile_path, "r") as bmfp:
-                for line in bmfp:
-                  fun, meth = line.split(",")
-                  meth = meth.rstrip("\n")
-                  new_dir = f"{outdir}\{key}_{disp_source}_{fun}_{meth}"
-                  nos2_dict_cp["basis_name"] = meth
-                  nos2_dict_cp["method"] = fun
-                  if os.path.exists(new_dir):
-                    i = 1
-                    while os.path.exists(new_dir):
-                      new_dir = new_dir + f"_{i}"
-                      i += 1                                
-                  os.mkdir(new_dir)
-                  shutil.copy(hkls_paths[key], new_dir)
-                  shutil.copy(self.solution_path, new_dir)
-                  poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
-                  if os.path.exists(poss_ins_path):
-                     shutil.copy(poss_ins_path, new_dir)
-                  joblist.append(FAPJob(                                   # create the FAPJob object here
-                                        base_path = new_dir,
-                                        solution_name = self.ins_name, 
-                                        name = key,
-                                        energy_source = energy_source, 
-                                        resolution = self.resolution,  
-                                        disp = self.perform_disp_ref,
-                                        indiv_disps = indiv_disps, 
-                                        disp_source= disp_source, 
-                                        elements = elements,
-                                        nos2 = True, 
-                                        growed = self.growed,
-                                        nos2_dict = nos2_dict_cp.copy()
-                                        )  
-                                )
-            else:
-              new_dir = f"{outdir}\{key}_{disp_source}"
-              if os.path.exists(new_dir):
-                    i = 1
-                    while os.path.exists(new_dir):
-                      new_dir = new_dir + f"_{i}"
-                      i += 1 
-              os.mkdir(new_dir)
-              shutil.copy(hkls_paths[key], new_dir)
-              shutil.copy(self.solution_path, new_dir)
-              poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
-              print(poss_ins_path)
-              if os.path.exists(poss_ins_path):
-                  shutil.copy(poss_ins_path, new_dir)
-              joblist.append(FAPJob( 
-                                        base_path = new_dir, 
-                                        solution_name = self.ins_name, 
-                                        name = key, 
-                                        energy_source = energy_source,
-                                        resolution = self.resolution,  
-                                        disp = self.perform_disp_ref,
-                                        indiv_disps = indiv_disps,  
-                                        disp_source = disp_source, 
-                                        elements = elements,
-                                        nos2 = self.use_nosphera2, 
-                                        growed = self.growed,
-                                        nos2_dict = nos2_dict_cp.copy()
-                                        )
-                              )
-        
-      elif self.benchmark:                                      #if only the benchmark test is performed
-        with open(self.benchmarkfile_path, "r") as bmfp:
-          for line in bmfp:
-            fun, meth = line.split(",")
-            meth = meth.rstrip("\n")
-            nos2_dict_cp = self.nos2_dict.copy()
-            nos2_dict_cp["basis_name"] = meth
-            nos2_dict_cp["method"] = fun
-            new_dir = f"{outdir}\{key}_{fun}_{meth}"
-            if os.path.exists(new_dir):
-                    # i = 1
-                    # while os.path.exists(new_dir):
-                    #   new_dir = new_dir + f"_{i}"
-                    #   i += 1 
-                    continue                                    # skip if same .hkl is found twice (different data should have a different name)
-            os.mkdir(new_dir)
-            shutil.copy(hkls_paths[key], new_dir)
-            shutil.copy(self.solution_path, new_dir)
-            poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
-            if os.path.exists(poss_ins_path):
-                shutil.copy(poss_ins_path, new_dir)
-            
-            joblist.append(FAPJob(                                   # create the FAPJob object here
-                                  base_path = new_dir, 
-                                  solution_name = self.ins_name, 
-                                  name = key, 
-                                  energy_source = energy_source,
-                                  resolution = self.resolution,  
-                                  disp = self.perform_disp_ref, 
-                                  elements = elements,
-                                  nos2 = True, 
-                                  growed = self.growed,
-                                  nos2_dict = nos2_dict_cp.copy()
-                                  )  
-                          )
-                      
-      else:                                                       #case for normal structure refinement
-        new_dir = f"{outdir}\{key}" 
+      if self.perform_disp_ref:
+        joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths,energy_source))
+      elif self.benchmark:
+        joblist.append(self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source))
+      else:
+        joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths,energy_source))
+    return joblist
+  
+  def prepare_defaultjob(self, key, elements, hkls_paths,energy_source):
+    nos2_dict_cp = self.nos2_dict.copy()
+    new_dir = f"{self.outdir}\{key}" 
+    if os.path.exists(new_dir):
+      i = 1
+      while os.path.exists(new_dir):
+        new_dir = new_dir + f"_{i}"
+        i += 1 
+    os.mkdir(new_dir)
+    shutil.copy(hkls_paths[key], new_dir)
+    shutil.copy(self.solution_path, os.path.join(new_dir,"solution.ins"))
+    poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
+    print(poss_ins_path)
+    if os.path.exists(poss_ins_path):
+      shutil.copy(poss_ins_path, new_dir)
+    hkls_paths[key] = new_dir
+    return(FAPJob( 
+                  base_path = new_dir, 
+                  solution_name = self.solution_path, 
+                  name = key, 
+                  energy_source = energy_source,
+                  resolution = self.resolution,  
+                  disp = self.perform_disp_ref, 
+                  nos2 = self.use_nosphera2, 
+                  growed = self.growed,
+                  nos2_dict = nos2_dict_cp.copy()
+                  )
+            )
+  
+  def prepare_benchmarkjob(self, key, elements, hkls_paths, energy_source):
+    with open(self.benchmarkfile_path, "r") as bmfp:
+      for line in bmfp:
+        fun, meth = line.split(",")
+        meth = meth.rstrip("\n")
+        nos2_dict_cp = self.nos2_dict.copy()
+        nos2_dict_cp["basis_name"] = meth
+        nos2_dict_cp["method"] = fun
+        new_dir = f"{self.outdir}\{key}_{fun}_{meth}"
         if os.path.exists(new_dir):
-                    i = 1
-                    while os.path.exists(new_dir):
-                      new_dir = new_dir + f"_{i}"
-                      i += 1 
+                continue                                    # skip if same .hkl is found twice (different data should have a different name)
         os.mkdir(new_dir)
         shutil.copy(hkls_paths[key], new_dir)
-        shutil.copy(self.solution_path, new_dir+"\solution.ins")
+        shutil.copy(self.solution_path, new_dir)
         poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
-        print(poss_ins_path)
         if os.path.exists(poss_ins_path):
-          shutil.copy(poss_ins_path, new_dir)
-        hkls_paths[key] = new_dir
-        joblist.append(FAPJob( 
+            shutil.copy(poss_ins_path, new_dir)
+        return(FAPJob(                                   # create the FAPJob object here
                               base_path = new_dir, 
-                              solution_name = poss_ins_path, 
+                              solution_name = self.solution_path, 
                               name = key, 
                               energy_source = energy_source,
                               resolution = self.resolution,  
                               disp = self.perform_disp_ref, 
-                              nos2 = self.use_nosphera2, 
+                              elements = elements,
+                              nos2 = True, 
                               growed = self.growed,
                               nos2_dict = nos2_dict_cp.copy()
-                              )
+                              )  
                       )
-    return joblist,outdir                               # returns names and locations of the output folders of the hkls
-  
+        
+        
+  def prepare_dispjob(self, key, elements, hkls_paths,energy_source):
+    nos2_dict_cp = self.nos2_dict.copy()
+    disp_sources = ["refined"]
+    indiv_disps = False
+    if self.indiv_disp:
+      indiv_disps = True          
+    if self.henke:
+      disp_sources.append("henke")
+    if self.sasaki:
+      disp_sources.append("sasaki")
+    if self.brennan:
+      disp_sources.append("brennan")
+    for disp_source in disp_sources:  
+        if self.benchmark:                              #also check if a benchmark regarding functionals/methods should be performed
+          with open(self.benchmarkfile_path, "r") as bmfp:
+            for line in bmfp:
+              fun, meth = line.split(",")
+              meth = meth.rstrip("\n")
+              new_dir = f"{self.outdir}\{key}_{disp_source}_{fun}_{meth}"
+              nos2_dict_cp["basis_name"] = meth
+              nos2_dict_cp["method"] = fun
+              if os.path.exists(new_dir):
+                i = 1
+                while os.path.exists(new_dir):
+                  new_dir = new_dir + f"_{i}"
+                  i += 1                                
+              os.mkdir(new_dir)
+              shutil.copy(hkls_paths[key], new_dir)
+              shutil.copy(self.solution_path, new_dir)
+              poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
+              if os.path.exists(poss_ins_path):
+                  shutil.copy(poss_ins_path, new_dir)
+              return(FAPJob(                                   # create the FAPJob object here
+                                    base_path = new_dir,
+                                    solution_name = self.solution_path, 
+                                    name = key,
+                                    energy_source = energy_source, 
+                                    resolution = self.resolution,  
+                                    disp = self.perform_disp_ref,
+                                    indiv_disps = indiv_disps, 
+                                    disp_source= disp_source, 
+                                    elements = elements,
+                                    nos2 = True, 
+                                    growed = self.growed,
+                                    nos2_dict = nos2_dict_cp.copy()
+                                    )  
+                            )
+        else:
+          new_dir = f"{self.outdir}\{key}_{disp_source}"
+          if os.path.exists(new_dir):
+                i = 1
+                while os.path.exists(new_dir):
+                  new_dir = new_dir + f"_{i}"
+                  i += 1 
+          os.mkdir(new_dir)
+          shutil.copy(hkls_paths[key], new_dir)
+          shutil.copy(self.solution_path, new_dir)
+          poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
+          print(poss_ins_path)
+          if os.path.exists(poss_ins_path):
+              shutil.copy(poss_ins_path, new_dir)
+          return(FAPJob( 
+                                    base_path = new_dir, 
+                                    solution_name = self.solution_path, 
+                                    name = key, 
+                                    energy_source = energy_source,
+                                    resolution = self.resolution,  
+                                    disp = self.perform_disp_ref,
+                                    indiv_disps = indiv_disps,  
+                                    disp_source = disp_source, 
+                                    elements = elements,
+                                    nos2 = self.use_nosphera2, 
+                                    growed = self.growed,
+                                    nos2_dict = nos2_dict_cp.copy()
+                                    )
+                          )
+    
+  def prepare_outdir(self):
+    i = 1                                                   # add a new outputfolder
+    while os.path.exists(f"{self.base_path}/FAPoutput"+str(i)):
+      i += 1
+    self.outdir = f"{self.base_path}\\FAPoutput"+str(i)
+    os.mkdir(self.outdir)
+    self.output_base_path = self.outdir  
+ 
   def set_up_params(self):                              # Handels all settings made in the interface (fap2.htm)   
     self.elem_string = OV.GetParam("fap2.element_string")
     if OV.GetParam("fap2.adjustment_eV"):
@@ -608,10 +622,10 @@ class FAP2(PT):
        
   def print_formula(self):   
     self.set_up_params()
-    joblist, outdir = self.prepare()
+    joblist = self.prepare()
     
     print(f"Initial Joblist: {joblist}")
-    print(f"Wrote results to {outdir}")
+    print(f"Wrote results to {self.outdir}")
     print(f"NospherA2 dict: {self.nos2_dict}")
     
     with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
@@ -622,6 +636,7 @@ class FAP2(PT):
         job.run()
       except:
         print(f"ERROR! \nDidnt (fully) run {job.name}!\nSee log for additional info.")
+      print(joblist)
     print(f"FAP2 run finished, results and log in {self.base_path}")
       
   def evaluate(self):
@@ -633,8 +648,7 @@ class FAP2(PT):
     exceptions = ["MaxIndices", "MinIndices", "FileMaxIndices", "FileMinIndices", "Redundancy", "Ueqs", "DISPS"]
     
     with open(f"{self.base_path}/output.txt", "r") as dat:
-        output = pd.DataFrame(columns=hkl_stats)
-        output.set_index("Name")
+        output = {}
         stats = {}
         ueqs = {}
         for line in dat: 

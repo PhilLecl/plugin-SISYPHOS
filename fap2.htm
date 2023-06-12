@@ -250,5 +250,17 @@ html.Snippet("gui/snippets/gui-link-button",
 $-
 
 <!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=FAP_2; help_ext=FAP_2;1; -->
+$+
+html.Snippet("gui/snippets/gui-link-button",
+"value='Evaluate'",
+"onclick=spy.FAP2.evaluate()",
+"bgcolor=GetVar(HtmlTableRowBgColour)",
+"td1=<td width="29%" align='center'>
+",)
+$-
+
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
 <!-- #include h3-FAP-extras $GetVar(FAP_plugin_path)\h3-FAP-extras.htm;gui\blocks\tool-h3-off.htm;image=h3-FAP_extras;onclick=;colspan=1;2; -->
 <!-- #include tool-footer gui/blocks/tool-footer.htm;colspan=2;1; -->
