@@ -341,8 +341,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth("Failed to init the .ins, filesize = 0!")
         return
       self.log_sth("Finished Setup of INS")
-      #self.refine()
-      print(self.solution_name)
+      self.refine()
       self.log_sth("Finished Refinement")
       try:
         self.extract_info()
