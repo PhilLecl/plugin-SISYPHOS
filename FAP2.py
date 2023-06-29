@@ -411,17 +411,36 @@ class FAP2(PT):
     hkls_paths = {}
     joblist = []
     elements = self.elem_string.split(",")
-    for paths,dirs,files in os.walk(self.base_path):    #search for all hkl files and put them into a list
-      for file in files:
-        if "FAPoutput" in paths:
-          continue
-        elif "olex2" in paths:
-          continue
-        if file.split(".")[-1] == "hkl":
-          name = file.split(".")[0]
-          hkls_paths[f"{name}"] = os.path.join(paths,file)
-          
+    print(self.base_path)
+    
+    # Iterate through all files and directories in the source folder
+    for root, dirs, files in os.walk(self.base_path):
+        # Exclude folders named "olex2" and their subfolders
+        if os.path.basename(root) == "temp":
+            continue
+        
+        # Iterate through all files in the current directory
+        for file in files:
+            if "FAPoutput" in root:
+              continue
+            elif file.endswith(".hkl"):              
+                source_file = os.path.join(root, file)
+                name = os.path.splitext(file)[0]  # Extract the name without the extension
+                hkls_paths[name] = source_file
+
     self.prepare_outdir()
+    
+  #  for paths,dirs,files in os.walk(self.base_path):    #search for all hkl files and put them into a list
+  #    if os.path.basename(paths) == "olex2":
+  #        continue
+  #    if "FAPoutput" in paths:
+  #        continue
+  #    for file in files:
+  #      if file.endswith("hkl"):
+  #        name = file.split(".")[0]
+  #        hkls_paths[f"{name}"] = os.path.join(paths,file)
+  #  print(hkls_paths)
+  #  self.prepare_outdir()
     
     if self.energies_from_headers:
       energy_source = "header"
