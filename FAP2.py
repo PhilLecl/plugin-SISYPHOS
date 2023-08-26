@@ -155,18 +155,19 @@ class FAPJob:                                   # one FAPjob manages the refinem
         for x in l:
           val = olx.xf.uc.CellEx(x)
           d[x] = val
-          d['volume'] = olx.xf.uc.VolumeEx()
-          d['Z'] = olx.xf.au.GetZ()
-          d['Zprime'] = olx.xf.au.GetZprime()
-          stats3 = d
+        d['volume'] = olx.xf.uc.VolumeEx()
+        d['Z'] = olx.xf.au.GetZ()
+        d['Zprime'] = olx.xf.au.GetZprime()
+        stats3 = d
         self.log_sth(f"Extracted Cell stats: {stats3}")
       except:
         self.log_sth("Failed to extract Cell stats.")
           
       stats = olex_core.GetHklStat()
       self.log_sth(f"Extracted hkl stats: {stats}")
+      
       try:
-        stats2 = self.parse_cif(f"{self.base_path}/{self.name}.cif")
+        stats2 = self.parse_cif(f"{self.base_path}\{self.name}.cif")
         self.log_sth(f"Extracted cif stats: {stats2}")
       except:
         self.log_sth("Failed to extract cif stats!")
@@ -184,12 +185,13 @@ class FAPJob:                                   # one FAPjob manages the refinem
         out.write("CIF-stats:\t")  
         for key in stats2:
           out.write(str(key)+ ":" + str(stats2[key]) +",")
-        out.write("\n\n")
+        out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
       self.log_sth(stats3)
       
     def parse_cif(self,loc):
+      self.log_sth(f"Looking for cif information at: {loc}")
       dat_names = ["mu", 
              "wavelength", 
              "F000", 
@@ -416,31 +418,21 @@ class FAP2(PT):
     # Iterate through all files and directories in the source folder
     for root, dirs, files in os.walk(self.base_path):
         # Exclude folders named "olex2" and their subfolders
-        if os.path.basename(root) == "temp":
+        if os.path.basename(root) == "olex2":
             continue
         
         # Iterate through all files in the current directory
         for file in files:
             if "FAPoutput" in root:
               continue
+            elif os.path.join("olex2", "temp") in root or os.path.join("olex2", "Wfn_job") in root:
+              continue
             elif file.endswith(".hkl"):              
                 source_file = os.path.join(root, file)
                 name = os.path.splitext(file)[0]  # Extract the name without the extension
-                hkls_paths[name] = source_file
-
+                hkls_paths[name] = os.path.join(root,file)
+    print(hkls_paths)
     self.prepare_outdir()
-    
-  #  for paths,dirs,files in os.walk(self.base_path):    #search for all hkl files and put them into a list
-  #    if os.path.basename(paths) == "olex2":
-  #        continue
-  #    if "FAPoutput" in paths:
-  #        continue
-  #    for file in files:
-  #      if file.endswith("hkl"):
-  #        name = file.split(".")[0]
-  #        hkls_paths[f"{name}"] = os.path.join(paths,file)
-  #  print(hkls_paths)
-  #  self.prepare_outdir()
     
     if self.energies_from_headers:
       energy_source = "header"
@@ -454,7 +446,11 @@ class FAP2(PT):
       if self.perform_disp_ref:
         joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths,energy_source))
       elif self.benchmark:
-        joblist.append(self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source))
+        with open(self.benchmarkfile_path, "r") as bmfp:
+          for line in bmfp:
+            fun, meth = line.split(",")
+            meth = meth.rstrip("\n")
+            joblist.append(self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, fun, meth))
       else:
         joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths,energy_source))
     return joblist
@@ -488,17 +484,13 @@ class FAP2(PT):
                   )
             )
   
-  def prepare_benchmarkjob(self, key, elements, hkls_paths, energy_source):
-    with open(self.benchmarkfile_path, "r") as bmfp:
-      for line in bmfp:
-        fun, meth = line.split(",")
-        meth = meth.rstrip("\n")
+  def prepare_benchmarkjob(self, key, elements, hkls_paths, energy_source, fun, meth):
         nos2_dict_cp = self.nos2_dict.copy()
         nos2_dict_cp["basis_name"] = meth
         nos2_dict_cp["method"] = fun
         new_dir = f"{self.outdir}\{key}_{fun}_{meth}"
         if os.path.exists(new_dir):
-                continue                                    # skip if same .hkl is found twice (different data should have a different name)
+          return                                    # skip if same .hkl is found twice (different data should have a different name)
         os.mkdir(new_dir)
         shutil.copy(hkls_paths[key], new_dir)
         shutil.copy(self.solution_path, new_dir)
@@ -518,8 +510,7 @@ class FAP2(PT):
                               nos2_dict = nos2_dict_cp.copy()
                               )  
                       )
-        
-        
+               
   def prepare_dispjob(self, key, elements, hkls_paths,energy_source):
     nos2_dict_cp = self.nos2_dict.copy()
     disp_sources = ["refined"]
@@ -654,7 +645,7 @@ class FAP2(PT):
         job.run()
       except:
         print(f"ERROR! \nDidnt (fully) run {job.name}!\nSee log for additional info.")
-      print(joblist)
+    print(joblist)
     print(f"FAP2 run finished, results and log in {self.base_path}")
       
   def evaluate(self):
