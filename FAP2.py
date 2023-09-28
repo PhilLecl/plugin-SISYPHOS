@@ -214,41 +214,46 @@ class FAPJob:                                   # one FAPjob manages the refinem
                     "refine_ls_wR_factor_ref",
                     "REM Shift_max"]
       out = {}
-      with open(loc, "r") as incif:
-          for line in incif:
-              for i,filter in enumerate(corr_filts):
-                  if filter in line:
-                      out[f"{dat_names[i]}"] = float(line.split()[-1])
+      try:
+        with open(loc, "r") as incif:
+            for line in incif:
+                for i,filter in enumerate(corr_filts):
+                    if filter in line:
+                        out[f"{dat_names[i]}"] = float(line.split()[-1])
+      except:
+        self.log_sth("Basic cif extraction failed!")
+      try:
+        with open(loc, "r") as incif:
+            switch2 = False
+            for line in incif:
+                for elem in self.elements:
+                    switch = True                
+                    if  line.startswith(f" {elem} ") & switch:
+                        switch = False
+                        if "(" in line.split(" ")[3]:
+                            print(line)
+                            fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
+                            fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
+                        else:
+                            print(line)
+                            fp = float(line.split(" ")[2])
+                            fdp = float(line.split(" ")[3])
+                        out[f"{elem}_anoms"] = (fp,fdp)
 
-      with open(loc, "r") as incif:
-          switch2 = False
-          for line in incif:
-              for elem in self.elements:
-                  switch = True                
-                  if  line.startswith(f" {elem} ") & switch:
-                      switch = False
-                      if "(" in line.split(" ")[3]:
-                          print(line)
-                          fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
-                          fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
-                      else:
-                          print(line)
-                          fp = float(line.split(" ")[2])
-                          fdp = float(line.split(" ")[3])
-                      out[f"{elem}_anoms"] = (fp,fdp)
-
-              if line.startswith("  _atom_site_refinement_flags_occupancy"):
-                  switch2 = True
-                  continue
-              if switch2:
-                  if line.startswith("\n"):
-                      switch2 = False
-                  else:
-                      lin = line.split(" ")
-                      atom = lin[1]
-                      ueq = lin[6].split("(")[0]
-                      ueq_delta = lin[6].split("(")[1][:-1]
-                      out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
+                if line.startswith("  _atom_site_refinement_flags_occupancy"):
+                    switch2 = True
+                    continue
+                if switch2:
+                    if line.startswith("\n"):
+                        switch2 = False
+                    else:
+                        lin = line.split(" ")
+                        atom = lin[1]
+                        ueq = lin[6].split("(")[0]
+                        ueq_delta = lin[6].split("(")[1][:-1]
+                        out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
+      except:
+        self.log_sth("Extended cif extraction failed!")
       return out
     
       
