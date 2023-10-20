@@ -515,6 +515,8 @@ class FAP2(PT):
       elif self.benchmark:
         with open(self.benchmarkfile_path, "r") as bmfp:
           for line in bmfp:
+            if line == "\n":
+              continue
             fun, meth = line.split(",")
             meth = meth.rstrip("\n")
             joblist.append(self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, fun, meth))
