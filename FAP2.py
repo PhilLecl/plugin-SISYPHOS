@@ -118,9 +118,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
         exti = olx.xf.rm.Exti()
         self.log_sth(f"Found Extinction: {exti}")
         if exti == "n/a":
-          _ = 1
+          pass
         else:
-          if float(exti[:5]) < 0.001:
+          if float(exti.split("(")[0]) < 0.001:
             olex.m("delins EXTI")
             self.log_sth(f"Deleted EXTI with exti of: {exti}")
           else:
@@ -149,7 +149,11 @@ class FAPJob:                                   # one FAPjob manages the refinem
       OV.SetParam('snum.NoSpherA2.source','ORCA 5.0')
       for key in self.nos2_dict:
         OV.SetParam(f'snum.NoSpherA2.{key}', f"{self.nos2_dict[key]}")
-        self.log_sth(f"{key}: {OV.GetParam(f'snum.NoSpherA2.{key}')}")               
+        self.log_sth(f"{key}: {OV.GetParam(f'snum.NoSpherA2.{key}')}")
+      if OV.GetParam('snum.NoSpherA2.multiplicity') == '0':
+        self.log_sth("I wil set a Multiplicity of 1, since none selected")
+        OV.SetParam('snum.NoSpherA2.multiplicity', "1")
+      
         
     def extract_info(self):
       try:
@@ -527,8 +531,8 @@ class FAP2(PT):
         joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths,energy_source))
       elif self.benchmark:
         with open(self.benchmarkfile_path, "r") as bmfp:
-          line.strip(" ")
           for line in bmfp:
+            line.strip(" ")
             if line == "\n":
               continue
             fun, meth = line.split(";")
@@ -571,7 +575,8 @@ class FAP2(PT):
         nos2_dict_cp = self.nos2_dict.copy()
         nos2_dict_cp["basis_name"] = meth
         nos2_dict_cp["method"] = fun
-        new_dir = f"{self.outdir}\{key}_{fun}_{meth}"
+        meth_temp =  meth.replace('(', '').replace(')', '')
+        new_dir = f"{self.outdir}\{key}_{fun}_{meth_temp}"
         if os.path.exists(new_dir):
           return                                    # skip if same .hkl is found twice (different data should have a different name)
         os.mkdir(new_dir)
@@ -612,7 +617,8 @@ class FAP2(PT):
             for line in bmfp:
               fun, meth = line.split(",")
               meth = meth.rstrip("\n")
-              new_dir = f"{self.outdir}\{key}_{disp_source}_{fun}_{meth}"
+              meth_temp =  meth.replace('(', '').replace(')', '')
+              new_dir = f"{self.outdir}\{key}_{disp_source}_{fun}_{meth_temp}"
               nos2_dict_cp["basis_name"] = meth
               nos2_dict_cp["method"] = fun
               if os.path.exists(new_dir):
@@ -726,8 +732,9 @@ class FAP2(PT):
     for job in joblist:
       try:
         job.run()
-      except:
+      except NameError as error:
         print(f"ERROR! \nDidnt (fully) run {job.name}!\nSee log for additional info.")
+        print(error)
     print(joblist)
     print(f"FAP2 run finished, results and log in {self.base_path}")
       
