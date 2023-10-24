@@ -3,23 +3,26 @@
 <!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=h3-FAP2_1; help_ext=FAP2_1;1; -->
 
 
-    $+
+  $+
     html.Snippet(GetVar(default_link),
     "value=Reload Plugin",
     "onclick=py.run BaseDir()\util\pyUtil\PluginLib\plugin-FAP2\FAP2.py",
-    )$-
+    )
+  $-
 
-    $+
+  $+
     html.Snippet(GetVar(default_link),
     "value=Settings",
     "onclick=spy.EditParams(fap2)",
-    )$-
+    )
+  $-
 
-    $+
+  $+
     html.Snippet(GetVar(default_link),
     "value=Open Folder",
     "onclick=shell  BaseDir()\util\pyUtil\PluginLib\plugin-FAP2\FAP2.py",
-    )$-
+    )
+  $-
 
 
 

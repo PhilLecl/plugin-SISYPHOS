@@ -1,5 +1,5 @@
-import numpy as np
-import scipy as sp
+#import numpy as np
+#import scipy as sp
 from scipy import constants as conts
 
 def ret_energy(wavelength):

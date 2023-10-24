@@ -105,7 +105,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
         else:
           olex.m("fix disp -c")
         OV.SetParam('snum.NoSpherA2.use_aspherical',False)
-        OV.SetParam('snum.refinement.update_weight',True)
+        if OV.GetParam('fap2.update_weight') == True:
+          OV.SetParam('snum.refinement.update_weight',True)
+        else:
+          OV.SetParam('snum.refinement.update_weight',False)
         olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
         self.log_sth(fr"{self.name}:\t Set refinement engine olex2.refine with G-N\n")
         if self.growed:
