@@ -39,6 +39,9 @@ fap2{
   indiv_disp = False
   .type = bool
 
+  update_weight = True
+  .type = bool
+
   gui{
     location = 'tools'
       .type = str
