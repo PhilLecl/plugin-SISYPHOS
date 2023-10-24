@@ -475,7 +475,7 @@ class FAP2(PT):
     except:
       print("No directory choosen!")
     if out == "":
-      print("No data directory chosen!")
+      print(" ")
     else:
       buffer = out.split("\\")
       buffer = buffer[:-1]
