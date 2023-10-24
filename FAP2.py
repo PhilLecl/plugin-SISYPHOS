@@ -186,14 +186,15 @@ class FAPJob:                                   # one FAPjob manages the refinem
         out.write("Stats-GetHklStat:\t")
         for key in stats:
           out.write(str(key)+ ":" + str(stats[key]) +",")
-        out.write("\n")
-        out.write("Cell-Stats:\t")  
+        out.write("\nCell-Stats:\t")  
         for key in stats3:
           out.write(str(key)+ ":" + str(stats3[key]) +",")
-        out.write("\n")
-        out.write("CIF-stats:\t")  
+        out.write("\nCIF-stats:\t")  
         for key in stats2:
           out.write(str(key)+ ":" + str(stats2[key]) +",")
+        out.write("\nNoSpherA2_Dict:\t")
+        for key in self.nos2_dict:
+          out.write(str(key)+ ":" + str(self.nos2_dict[key]) +",")
         out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
@@ -588,7 +589,7 @@ class FAP2(PT):
         return(FAPJob(                                   # create the FAPJob object here
                               base_path = new_dir, 
                               solution_name = self.solution_path, 
-                              name = key, 
+                              name = f"{key}_{fun}_{meth_temp}", 
                               energy_source = energy_source,
                               resolution = self.resolution,  
                               disp = self.perform_disp_ref, 
