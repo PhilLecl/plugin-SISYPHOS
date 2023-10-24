@@ -461,13 +461,23 @@ class FAP2(PT):
     out = olex.f('fileOpen("Please choose a text benchmark file", "*", filepath())')
     self.benchmarkfile_path = out
     print(f"Benchmarkfile loaded froms:\n{out}")
-     
+  
+  def chooseDir(self):
+     return olex.f('choosedir("Choose your data folder")')
+   
   def setBasePath(self):
-    out = olex.f('fileOpen("Please choose a file inside the folder where your data is stored", "*", filepath())')
-    buffer = out.split("\\")
-    buffer = buffer[:-1]
-    self.base_path = "\\".join(buffer)
-    print(f"Your data lies at:\n{'/'.join(buffer)}")
+    out= ""
+    try:
+      out = self.chooseDir()
+    except:
+      print("No directory choosen!")
+    if out == "":
+      print("No data directory chosen!")
+    else:
+      buffer = out.split("\\")
+      buffer = buffer[:-1]
+      self.base_path = "\\".join(buffer)
+      print(f"Your data lies at:\n{'/'.join(buffer)}")
 
   def setSolutionPath(self):
     out = olex.f('fileOpen("Choose Your solution .ins file", "*.ins", filepath())')
