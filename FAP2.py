@@ -128,6 +128,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
             olex.m("spy.set_refinement_program(olex2.refine, Levenberg-Marquardt)")
         olex.m("refine 10")
         if self.nos2:
+          olex.m("neutronhdist")
+          self.log_sth("H atoms placed to neutron distances (NeutronHDist command)")
           self.configure_ORCA()
           olex.m("refine 10")
         counter = 0
