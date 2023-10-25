@@ -203,21 +203,26 @@ class FAPJob:                                   # one FAPjob manages the refinem
         use_tsc = OV.IsNoSpherA2()
         table_name = ""      
         if use_tsc == True:
-          table_name = str(OV.GetParam("snum.NoSpherA2.file"))        
+          table_name = str(OV.GetParam("snum.NoSpherA2.file"))
         from refinement import FullMatrixRefine
+        # Even though never used we need this import since it initializes things we need later on
         from olexex import OlexRefinementModel
         from cctbx.array_family import flex
         from scitbx import matrix
         from cctbx.crystal import calculate_distances
+        #This creates the FMR with normal equations that carries EVERYTHING!
         fmr = FullMatrixRefine()
         if table_name != "":
+          #Do not run refinement, simply prepare equations
           norm_eq = fmr.run(build_only=True, table_file_name=table_name)
         else:
           norm_eq = fmr.run(build_only=True)
+        #and build them
         norm_eq.build_up(False)
+
         connectivity_full = fmr.reparametrisation.connectivity_table
         xs = fmr.xray_structure()
-        
+
         cell_params = fmr.olx_atoms.getCell()
         cell_errors = fmr.olx_atoms.getCellErrors()
         cell_vcv = flex.pow2(matrix.diag(cell_errors).as_flex_double_matrix())
@@ -230,15 +235,17 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 cell_params[j+3] == 90 and
                 cell_errors[j+3] == 0):
               cell_vcv[i,j] = math.pow(cell_errors[i],2)
-              cell_vcv[j,i] = math.pow(cell_errors[i],2)        
+              cell_vcv[j,i] = math.pow(cell_errors[i],2)
+        #Prepare the Cell Variance covariance matrix, since we need it for error propagation in distances
         cell_vcv = cell_vcv.matrix_symmetric_as_packed_u()
-        #import iotbx
         sl = xs.scatterers().extract_labels()
         sf = xs.sites_frac()
+        #This is VCV from refinement equations
         cm = norm_eq.covariance_matrix_and_annotations().matrix
         pm = xs.parameter_map()
         pat = connectivity_full.pair_asu_table
 
+        # calculate the distances using the prepared information
         distances = calculate_distances(
           pat,
           sf,
@@ -246,6 +253,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           cell_covariance_matrix=cell_vcv,
           parameter_map=pm)
 
+        #The distances only exist once we iterate over them! Therefore build them and save them in this loop
         for i,d in enumerate(distances):
           bond = sl[d.i_seq]+"-"+sl[d.j_seq]
           dist_stats[bond] = distances.distances[i]
