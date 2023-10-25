@@ -8,6 +8,7 @@ import os
 import olex_core
 import olex
 import olx
+import math
 #import gui
 import re
 import shutil
@@ -46,12 +47,12 @@ OV.SetVar('FAP_plugin_path', p_path)
 
 class FAPJob:                                   # one FAPjob manages the refinement, logging and output of one data set of the same structure as all other jobs
     def __init__(self, 
-                base_path,
-                solution_name, 
-                name, 
-                resolution,  
-                energy_source,
-                nos2_dict,
+                base_path = "",
+                solution_name = "", 
+                name = "", 
+                resolution= "",  
+                energy_source = "",
+                nos2_dict = {},
                 indiv_disps = False,
                 disp = False, 
                 disp_source = "", 
@@ -81,11 +82,11 @@ class FAPJob:                                   # one FAPjob manages the refinem
           "hooft_str" : 0.0,
           
         }
-
-        self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
-        for attr in dir(self):
-          self.log_sth("obj.%s = %r" % (attr, getattr(self, attr)))
-        self.log_sth(f"Nos2 properties: \t {nos2_dict}")       
+        if base_path != "":
+          self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
+          for attr in dir(self):
+            self.log_sth("obj.%s = %r" % (attr, getattr(self, attr)))
+          self.log_sth(f"Nos2 properties: \t {nos2_dict}")
 
     def log_sth(self,log):
       msg = f"{self.name}:\t{log}\n"
@@ -193,23 +194,93 @@ class FAPJob:                                   # one FAPjob manages the refinem
       except:
         self.log_sth("Failed to extract cif stats!")
 
+      
+      dist_stats = {}
+      dist_errs = {}
+      
+      try:
+        # This Block will extract the bondlengths from all bonded atoms
+        use_tsc = OV.IsNoSpherA2()
+        table_name = ""      
+        if use_tsc == True:
+          table_name = str(OV.GetParam("snum.NoSpherA2.file"))        
+        from refinement import FullMatrixRefine
+        from olexex import OlexRefinementModel
+        from cctbx.array_family import flex
+        from scitbx import matrix
+        from cctbx.crystal import calculate_distances
+        fmr = FullMatrixRefine()
+        if table_name != "":
+          norm_eq = fmr.run(build_only=True, table_file_name=table_name)
+        else:
+          norm_eq = fmr.run(build_only=True)
+        norm_eq.build_up(False)
+        connectivity_full = fmr.reparametrisation.connectivity_table
+        xs = fmr.xray_structure()
+        
+        cell_params = fmr.olx_atoms.getCell()
+        cell_errors = fmr.olx_atoms.getCellErrors()
+        cell_vcv = flex.pow2(matrix.diag(cell_errors).as_flex_double_matrix())
+        for i in range(3):
+          for j in range(i+1,3):
+            if (cell_params[i] == cell_params[j] and
+                cell_errors[i] == cell_errors[j] and
+                cell_params[i+3] == 90 and
+                cell_errors[i+3] == 0 and
+                cell_params[j+3] == 90 and
+                cell_errors[j+3] == 0):
+              cell_vcv[i,j] = math.pow(cell_errors[i],2)
+              cell_vcv[j,i] = math.pow(cell_errors[i],2)        
+        cell_vcv = cell_vcv.matrix_symmetric_as_packed_u()
+        #import iotbx
+        sl = xs.scatterers().extract_labels()
+        sf = xs.sites_frac()
+        cm = norm_eq.covariance_matrix_and_annotations().matrix
+        pm = xs.parameter_map()
+        pat = connectivity_full.pair_asu_table
+                
+        distances = calculate_distances(
+          pat,
+          sf,
+          covariance_matrix=cm,
+          cell_covariance_matrix=cell_vcv,
+          parameter_map=pm)
+        
+        for i,d in enumerate(distances):
+          bond = sl[d.i_seq]+"-"+sl[d.j_seq]
+          dist_stats[bond] = distances.distances[i]
+          dist_errs[bond] = math.sqrt(distances.variances[i])
+          
+        
+      except NameError as error:
+        print(error)
+        print("Could not obtain cctbx object and calculate ESDs!\n")
+        self.log_sth("Failed to extract distances")
+        pass
+
       with open(f"{os.path.dirname(self.base_path)}/output.txt", "a") as out:
         out.write(f"{self.name}:\n")
         out.write("Stats-GetHklStat:\t")
         for key in stats:
-          out.write(str(key)+ ":" + str(stats[key]) +",")
+          out.write(str(key) + ":" + str(stats[key]) + ",")
         out.write("\nCell-Stats:\t")  
         for key in stats3:
-          out.write(str(key)+ ":" + str(stats3[key]) +",")
+          out.write(str(key) + ":" + str(stats3[key]) + ",")
         out.write("\nCIF-stats:\t")  
         for key in stats2:
-          out.write(str(key)+ ":" + str(stats2[key]) +",")
+          out.write(str(key) + ":" + str(stats2[key]) + ",")
         out.write("\nNoSpherA2_Dict:\t")
         for key in self.nos2_dict:
-          out.write(str(key)+ ":" + str(self.nos2_dict[key]) +",")
+          out.write(str(key) + ":" + str(self.nos2_dict[key]) + ",")
         out.write("\nrefine_dict:\t")
         for key in self.refine_results:
-          out.write(str(key)+ ":" + str(OV.GetParam("snum.refinement."+key)) +",")
+          out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ",")
+        out.write("\nbondlengths:\t")
+        for key in dist_stats:
+          out.write(str(key) + ":" + str(dist_stats[key]) + ",")
+        out.write("\nbonderrors:\t")
+        for key in dist_stats:
+          out.write(str(key) + ":" + str(dist_errs[key]) + ",")        
         out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
@@ -438,7 +509,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
       try:
         self.extract_info()
         self.log_sth("Extracted Information")
-      except: 
+      except:
+        print("Faield to extract information")
         self.log_sth("Failed to extract information!")
 
 class FAP2(PT):
@@ -612,8 +684,8 @@ class FAP2(PT):
             with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
                 main_out.write(f"Failed to read instructions for {keys} in benchmarkfile")
         print(nos2_dict_cp)
-        meth_temp =  nos2_dict_cp["method"].replace('(', '').replace(')', '')
-        fun_temp =  nos2_dict_cp["basis_name"]
+        meth_temp =  nos2_dict_cp["basis_name"].replace('(', '').replace(')', '')
+        fun_temp =  nos2_dict_cp["method"]
         new_dir = f"{self.outdir}\{key}_{fun_temp}_{meth_temp}"
         if os.path.exists(new_dir):
           return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
