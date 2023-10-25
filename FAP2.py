@@ -546,19 +546,28 @@ class FAP2(PT):
       if self.perform_disp_ref:
         joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths,energy_source))
       elif self.benchmark:
-        with open(self.benchmarkfile_path, "r") as bmfp:
+        with open(self.benchmarkfile_path, "r") as bmfp:  # NoSpherA2 possible keywords: "basis_name","method", 
+                                                          #                              "multiplicity", "full_HAR",
+                                                          #                              "ncpus", "mem", "charge", 
+                                                          #                              "Max_HAR_Cycles","becke_accuracy",
+                                                          #                              "Relativistic", "h_aniso", 
+                                                          #                              "h_afix", "add_disp", 
+                                                          #                              "cluster_radius", "DIIS",
+                                                          #                              "cluster_grow", "ORCA_SCF_Conv",
+                                                          #                              "ORCA_SCF_Strategy", "ORCA_Solvation",
+                                                          #                              "pySCF_Damping"]
           for line in bmfp:
             line.strip(" ")
             if line == "\n":
               continue
-            fun, meth = line.split(";")
-            meth = meth.rstrip("\n")
-            new_job = self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, fun, meth)
+            keys = line.split(";")
+            keys[-1].rstrip("\n")
+            new_job = self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, keys)
             if new_job.base_path != "":
               joblist.append(new_job)
             else: # This is the case if fodler already existed, then we will not append the Job to the list
               print("!!!!Error during preparation of joblist!!!!")
-              print("Skipping job with ", hkl, elements, hkls_paths,energy_source, fun, meth)
+              print("Skipping job with ", hkl, elements, hkls_paths,energy_source)
               pass
       else:
         joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths,energy_source))
@@ -593,12 +602,19 @@ class FAP2(PT):
                   )
             )
 
-  def prepare_benchmarkjob(self, key, elements, hkls_paths, energy_source, fun, meth):
+  def prepare_benchmarkjob(self, key, elements, hkls_paths, energy_source, keys):
         nos2_dict_cp = self.nos2_dict.copy()
-        nos2_dict_cp["basis_name"] = meth
-        nos2_dict_cp["method"] = fun
-        meth_temp =  meth.replace('(', '').replace(')', '')
-        new_dir = f"{self.outdir}\{key}_{fun}_{meth_temp}"
+        try:
+          for keyy in keys:
+            k, m = keyy.split(":")
+            nos2_dict_cp[k.strip(" ")] = m.strip(" ").strip("\n")
+        except:
+            with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
+                main_out.write(f"Failed to read instructions for {keys} in benchmarkfile")
+        print(nos2_dict_cp)
+        meth_temp =  nos2_dict_cp["method"].replace('(', '').replace(')', '')
+        fun_temp =  nos2_dict_cp["basis_name"]
+        new_dir = f"{self.outdir}\{key}_{fun_temp}_{meth_temp}"
         if os.path.exists(new_dir):
           return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
                                                             # I changed this to return an empty Job, to not have a "None" in the job list in 
@@ -612,7 +628,7 @@ class FAP2(PT):
         return(FAPJob(                                   # create the FAPJob object here
                               base_path = new_dir, 
                               solution_name = self.solution_path, 
-                              name = f"{key}_{fun}_{meth_temp}", 
+                              name = f"{key}_{fun_temp}_{meth_temp}", 
                               energy_source = energy_source,
                               resolution = self.resolution,  
                               disp = self.perform_disp_ref, 
