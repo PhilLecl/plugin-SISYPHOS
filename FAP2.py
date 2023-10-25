@@ -1,20 +1,20 @@
 from asyncio.constants import LOG_THRESHOLD_FOR_CONNLOST_WRITES
-from email.mime import base
+#from email.mime import base
 from unicodedata import name
 from olexFunctions import OlexFunctions
 OV = OlexFunctions()
 import os
-import htmlTools
+#import htmlTools
 import olex_core
 import olex
 import olx
-import gui
+#import gui
 import re
 import shutil
-import sys
+#import sys
 from return_WL_energy import ret_wl
 from time import sleep
-import time
+#import time
 from PluginTools import PluginTools as PT
 #import pandas as pd
 
@@ -72,6 +72,15 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.nos2 = nos2                        #decide whether NoS2 is being used
         self.nos2_dict = nos2_dict              #all parameters from nosphera2 settings
         self.final_ins_path = ""                #will be set depending on other params in method setup ins
+        self.refine_results = {
+          "max_peak" : 0.0,
+          "min_hole" : 0.0,
+          "res_rms"  : 0.0,
+          "goof"     : 0.0,
+          "max_shift_over_esd" : 0.0,
+          "hooft_str" : 0.0,
+          
+        }
 
         self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
         for attr in dir(self):
@@ -140,21 +149,22 @@ class FAPJob:                                   # one FAPjob manages the refinem
             break
       except:
         self.log_sth("Failed during refinenement!")
-              
+
     def configure_ORCA(self):
       olx.xf.EndUpdate()
       if OV.HasGUI():
         olx.Refresh()
       OV.SetParam('snum.NoSpherA2.use_aspherical',True)
       OV.SetParam('snum.NoSpherA2.source','ORCA 5.0')
+      OV.SetParam('snum.NoSpherA2.precise_output',True)
       for key in self.nos2_dict:
         OV.SetParam(f'snum.NoSpherA2.{key}', f"{self.nos2_dict[key]}")
         self.log_sth(f"{key}: {OV.GetParam(f'snum.NoSpherA2.{key}')}")
       if OV.GetParam('snum.NoSpherA2.multiplicity') == '0':
         self.log_sth("I wil set a Multiplicity of 1, since none selected")
         OV.SetParam('snum.NoSpherA2.multiplicity', "1")
-      
-        
+
+
     def extract_info(self):
       try:
         l = ['a', 'b', 'c', 'alpha', 'beta', 'gamma']
@@ -169,10 +179,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth(f"Extracted Cell stats: {stats3}")
       except:
         self.log_sth("Failed to extract Cell stats.")
-          
+
       stats = olex_core.GetHklStat()
       self.log_sth(f"Extracted hkl stats: {stats}")
-      
+
       try:
         locat = f"{self.base_path}\{self.name}.cif"
         print(locat)
@@ -195,11 +205,14 @@ class FAPJob:                                   # one FAPjob manages the refinem
         out.write("\nNoSpherA2_Dict:\t")
         for key in self.nos2_dict:
           out.write(str(key)+ ":" + str(self.nos2_dict[key]) +",")
+        out.write("\nrefine_dict:\t")
+        for key in self.refine_results:
+          out.write(str(key)+ ":" + str(OV.GetParam("snum.refinement."+key)) +",")
         out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
       self.log_sth(stats3)
-    
+
     def parse_cif(self, loc):
       print("loc", loc)
       dat_names = ["mu", 
@@ -263,19 +276,19 @@ class FAPJob:                                   # one FAPjob manages the refinem
       except:
         self.log_sth("Extended cif extraction failed!")
       return out
-    
-      
+
+
     def parse_cif2(self,loc):
       self.log_sth(f"Looking for cif information at: {loc}")
       dat_names = ["mu", 
-             "wavelength", 
-             "F000", 
-             "tot_reflIns", 
-             "goof", 
-             "R_all", 
-             "R1", 
-             "wR2", 
-             "last Shift"]
+            "wavelength", 
+            "F000", 
+            "tot_reflIns", 
+            "goof", 
+            "R_all", 
+            "R1", 
+            "wR2", 
+            "last Shift"]
 
       corr_filts = ["exptl_absorpt_coefficient_mu", 
                     "diffrn_radiation_wavelength", 
@@ -286,7 +299,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
                     "refine_ls_R_factor_gt",
                     "refine_ls_wR_factor_ref",
                     "REM Shift_max"]
-  
+
       out = {}
 
       with open(loc, "r") as incif:
@@ -328,13 +341,13 @@ class FAPJob:                                   # one FAPjob manages the refinem
                       except:
                         print("Skipped some Ueqs")
       return out
-      
+
     def get_elements(self):
       elements = []
       for elem in str(olx.xf.GetFormula('list')).split(','):
         elements.append(elem.split(":")[0])
       return elements  
-      
+
     def setupIns(self):
       self.log_sth(f"base_path:{self.base_path};energy_source:{self.energy_source};solution_name:{self.solution_name}")
       
@@ -346,7 +359,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.setupInsDefault()
         
       self.log_sth(".ins has been setup.")
-        
+
     def setupInsHeader(self):
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
@@ -368,7 +381,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
     def setupInsIns(self):
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
-      
+
       with open(self.solution_name, "r") as inp, open(old_ins, "r") as old_inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
         cell = ""
         for line in old_inp:
@@ -387,7 +400,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           out.write(line)
       self.correct_ins()
       self.final_ins_path = f"{self.base_path}/{self.name}.ins"
-                
+
     def correct_ins(self):
       if self.disp and self.disp_source != "refined":
         temp_ins = []
@@ -411,7 +424,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 file.write(line)
         self.log_sth("Corrected .ins for dispersion")  
       else: self.log_sth("Did not correct for DISP")
-              
+
     def run(self):
       self.setupIns()
       if os.path.getsize(self.final_ins_path) == 0:
@@ -464,15 +477,15 @@ class FAP2(PT):
     OV.registerFunction(self.evaluate,True,"FAP2")
     OV.registerFunction(self.setSolutionPath,True,"FAP2")
     OV.registerFunction(self.setBenchmarkFile,True,"FAP2")
-    
+
   def setBenchmarkFile(self):
     out = olex.f('fileOpen("Please choose a text benchmark file", "*", filepath())')
     self.benchmarkfile_path = out
     print(f"Benchmarkfile loaded froms:\n{out}")
-  
+
   def chooseDir(self):
-     return olex.f('choosedir("Choose your data folder")')
-   
+    return olex.f('choosedir("Choose your data folder")')
+
   def setBasePath(self):
     out= ""
     try:
@@ -499,13 +512,13 @@ class FAP2(PT):
     joblist = []
     elements = self.elem_string.split(",")
     print(self.base_path)
-    
+
     # Iterate through all files and directories in the source folder
     for root, dirs, files in os.walk(self.base_path):
         # Exclude folders named "olex2" and their subfolders
         if os.path.basename(root) == "olex2":
             continue
-        
+
         # Iterate through all files in the current directory
         for file in files:
             if "FAPoutput" in root:
@@ -518,16 +531,16 @@ class FAP2(PT):
                 hkls_paths[name] = os.path.join(root,file)
     print(hkls_paths)
     self.prepare_outdir()
-    
+
     if self.energies_from_headers:
       energy_source = "header"
     elif self.energy_from_ins:
       energy_source = "ins"
     else:
       energy_source = "solution"
-      
+
     for hkl in hkls_paths:
-      nos2_dict_cp = self.nos2_dict.copy()
+      #nos2_dict_cp = self.nos2_dict.copy()
       if self.perform_disp_ref:
         joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths,energy_source))
       elif self.benchmark:
@@ -538,11 +551,17 @@ class FAP2(PT):
               continue
             fun, meth = line.split(";")
             meth = meth.rstrip("\n")
-            joblist.append(self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, fun, meth))
+            new_job = self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, fun, meth)
+            if new_job.base_path != "":
+              joblist.append(new_job)
+            else: # This is the case if fodler already existed, then we will not append the Job to the list
+              print("!!!!Error during preparation of joblist!!!!")
+              print("Skipping job with ", hkl, elements, hkls_paths,energy_source, fun, meth)
+              pass
       else:
         joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths,energy_source))
     return joblist
-  
+
   def prepare_defaultjob(self, key, elements, hkls_paths,energy_source):
     nos2_dict_cp = self.nos2_dict.copy()
     new_dir = f"{self.outdir}\{key}" 
@@ -571,7 +590,7 @@ class FAP2(PT):
                   nos2_dict = nos2_dict_cp.copy()
                   )
             )
-  
+
   def prepare_benchmarkjob(self, key, elements, hkls_paths, energy_source, fun, meth):
         nos2_dict_cp = self.nos2_dict.copy()
         nos2_dict_cp["basis_name"] = meth
@@ -579,7 +598,9 @@ class FAP2(PT):
         meth_temp =  meth.replace('(', '').replace(')', '')
         new_dir = f"{self.outdir}\{key}_{fun}_{meth_temp}"
         if os.path.exists(new_dir):
-          return                                    # skip if same .hkl is found twice (different data should have a different name)
+          return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
+                                                            # I changed this to return an empty Job, to not have a "None" in the job list in 
+                                                            # case the folder already exists, which crashes long benchmarks and is furstrating...
         os.mkdir(new_dir)
         shutil.copy(hkls_paths[key], new_dir)
         shutil.copy(self.solution_path, new_dir)
@@ -599,7 +620,7 @@ class FAP2(PT):
                               nos2_dict = nos2_dict_cp.copy()
                               )  
                       )
-               
+
   def prepare_dispjob(self, key, elements, hkls_paths,energy_source):
     nos2_dict_cp = self.nos2_dict.copy()
     disp_sources = ["refined"]
@@ -677,7 +698,7 @@ class FAP2(PT):
                                     nos2_dict = nos2_dict_cp.copy()
                                     )
                           )
-    
+
   def prepare_outdir(self):
     i = 1                                                   # add a new outputfolder
     while os.path.exists(f"{self.base_path}/FAPoutput"+str(i)):
@@ -685,7 +706,7 @@ class FAP2(PT):
     self.outdir = f"{self.base_path}\\FAPoutput"+str(i)
     os.mkdir(self.outdir)
     self.output_base_path = self.outdir  
- 
+
   def set_up_params(self):                              # Handels all settings made in the interface (fap2.htm)   
     self.elem_string = OV.GetParam("fap2.element_string")
     if OV.GetParam("fap2.adjustment_eV"):
@@ -718,7 +739,7 @@ class FAP2(PT):
     for param in nos_params:
       self.nos2_dict[param] = OV.GetParam(f"snum.NoSpherA2.{param}")
     print(self.nos2_dict)
-       
+
   def print_formula(self):   
     self.set_up_params()
     joblist = self.prepare()
@@ -729,7 +750,7 @@ class FAP2(PT):
     
     with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
         main_out.write(f"Joblist: \t{joblist}")
-    
+
     for job in joblist:
       try:
         job.run()
@@ -738,7 +759,7 @@ class FAP2(PT):
         print(error)
     print(joblist)
     print(f"FAP2 run finished, results and log in {self.base_path}")
-      
+
   def evaluate(self):
     hkl_stats = ["Name","TotalReflections", "UniqueReflections", "FriedelOppositesMerged", "InconsistentEquivalents", "SystematicAbsencesRemoved", "MinD", \
     "MaxD", "LimDmin", "LimDmax", "FilteredOff", "OmittedByUser", "OmittedReflections", "IntensityTransformed", "Rint", "Rsigma", "MeanIOverSigma", \
@@ -746,10 +767,10 @@ class FAP2(PT):
     "alpha", "beta", "gamma", "volume", "Z", "Zprime", "mu", "F000", "TotalReflections", "wavelength", "goof", "R_all", "R1", "wR2", "DISPS", "last Shift", "Ueqs"]
 
     exceptions = ["MaxIndices", "MinIndices", "FileMaxIndices", "FileMinIndices", "Redundancy", "Ueqs", "DISPS"]
-    
+
     with open(f"{self.base_path}/output.txt", "r") as dat:
         output = {}
-        stats = {}
+        #stats = {}
         ueqs = {}
         for line in dat: 
             if ":\n" in line:
@@ -779,6 +800,5 @@ class FAP2(PT):
                             ueqs[atom] = itm.split(":")[1]+")"
         output["Ueqs"] = ueqs
 
-    
+
 FAP2_instance = FAP2()
- 
