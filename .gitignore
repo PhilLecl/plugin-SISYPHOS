@@ -1,1 +1,3 @@
 *.pyc
+__pycache__/FAP2.cpython-38.pyc
+__pycache__/return_WL_energy.cpython-38.pyc
