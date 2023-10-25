@@ -197,7 +197,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       
       dist_stats = {}
       dist_errs = {}
-      
+
       try:
         # This Block will extract the bondlengths from all bonded atoms
         use_tsc = OV.IsNoSpherA2()
@@ -238,20 +238,19 @@ class FAPJob:                                   # one FAPjob manages the refinem
         cm = norm_eq.covariance_matrix_and_annotations().matrix
         pm = xs.parameter_map()
         pat = connectivity_full.pair_asu_table
-                
+
         distances = calculate_distances(
           pat,
           sf,
           covariance_matrix=cm,
           cell_covariance_matrix=cell_vcv,
           parameter_map=pm)
-        
+
         for i,d in enumerate(distances):
           bond = sl[d.i_seq]+"-"+sl[d.j_seq]
           dist_stats[bond] = distances.distances[i]
           dist_errs[bond] = math.sqrt(distances.variances[i])
-          
-        
+
       except NameError as error:
         print(error)
         print("Could not obtain cctbx object and calculate ESDs!\n")
