@@ -96,7 +96,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         out.write(msg)
       with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
         main_out.write(msg)
-          
+
     def refine(self):
       try:
         olex.m(f"reap {self.final_ins_path}")
@@ -152,7 +152,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
           if counter > 15:
             self.log_sth("Did not converge after 15 LS cycles, aborting and reporting results.")
             break
-      except:
+      except Exception as error:
+        self.log_sth(str(error))
         self.log_sth("Failed during refinenement!")
 
     def configure_ORCA(self):
@@ -182,8 +183,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
         d['Zprime'] = olx.xf.au.GetZprime()
         stats3 = d
         self.log_sth(f"Extracted Cell stats: {stats3}")
-      except:
+      except Exception as error:
+        self.log_sth(str(error))
         self.log_sth("Failed to extract Cell stats.")
+        pass
 
       stats = olex_core.GetHklStat()
       self.log_sth(f"Extracted hkl stats: {stats}")
@@ -193,8 +196,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
         print(locat)
         stats2 = self.parse_cif(locat)
         self.log_sth(f"Extracted cif stats: {stats2} from {locat}")
-      except:
+      except Exception as error:
+        self.log_sth(str(error))
         self.log_sth("Failed to extract cif stats!")
+        pass
 
       
       dist_stats = {}
@@ -202,7 +207,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
 
       try:
         # This Block will extract the bondlengths from all bonded atoms
-        use_tsc = OV.IsNoSpherA2()
+        use_tsc = self.nos2
         table_name = ""      
         if use_tsc == True:
           table_name = str(OV.GetParam("snum.NoSpherA2.file"))
@@ -261,9 +266,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
           dist_stats[bond] = distances.distances[i]
           dist_errs[bond] = math.sqrt(distances.variances[i])
 
-      except NameError as error:
+      except Exception as error:
         print(error)
         print("Could not obtain cctbx object and calculate ESDs!\n")
+        self.log_sth(str(error))
         self.log_sth("Failed to extract distances")
         pass
 
@@ -323,40 +329,43 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 for i,filter in enumerate(corr_filts):
                     if filter in line:
                         out[f"{dat_names[i]}"] = float(line.split()[-1])
+        self.log_sth("Basic cif extraction succesfull :)")
       except:
         self.log_sth("Basic cif extraction failed!")
       try:
         with open(loc, "r") as incif:
-            switch2 = False
-            for line in incif:
-                for elem in self.elements:
-                    switch = True                
-                    if  line.startswith(f" {elem} ") & switch:
-                        switch = False
-                        if "(" in line.split(" ")[3]:
-                            print(line)
-                            fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
-                            fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
-                        else:
-                            print(line)
-                            fp = float(line.split(" ")[2])
-                            fdp = float(line.split(" ")[3])
-                        out[f"{elem}_anoms"] = (fp,fdp)
-
-                if line.startswith("  _atom_site_refinement_flags_occupancy"):
-                    switch2 = True
-                    continue
-                if switch2:
-                    if line.startswith("\n"):
-                        switch2 = False
-                    else:
-                        lin = line.split(" ")
-                        atom = lin[1]
-                        ueq = lin[6].split("(")[0]
-                        ueq_delta = lin[6].split("(")[1][:-1]
-                        out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
-      except:
+          switch2 = False
+          for line in incif:
+            if self.disp == True:
+              for elem in self.elements:
+                switch = True                
+                if  line.startswith(f" {elem} ") & switch:
+                  switch = False
+                  if "(" in line.split(" ")[3]:
+                    print(line)
+                    fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
+                    fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
+                  else:
+                    print(line)
+                    fp = float(line.split(" ")[2])
+                    fdp = float(line.split(" ")[3])
+                  out[f"{elem}_anoms"] = (fp,fdp)
+            if line.startswith("  _atom_site_refinement_flags_occupancy"):
+              switch2 = True
+              continue
+            if switch2:
+              if line.startswith("\n"):
+                switch2 = False
+              else:
+                lin = line.split(" ")
+                atom = lin[1]
+                ueq = lin[6].split("(")[0]
+                ueq_delta = lin[6].split("(")[1][:-1]
+                out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
+      except Exception as e:
+        self.log_sth(str(e))
         self.log_sth("Extended cif extraction failed!")
+        pass
       return out
 
 
@@ -385,43 +394,44 @@ class FAPJob:                                   # one FAPjob manages the refinem
       out = {}
 
       with open(loc, "r") as incif:
-          for line in incif:
-              for i,filter in enumerate(corr_filts):
-                  if filter in line:
-                      out[f"{dat_names[i]}"] = float(line.split()[-1])
+        for line in incif:
+          for i,filter in enumerate(corr_filts):
+            if filter in line:
+              out[f"{dat_names[i]}"] = float(line.split()[-1])
 
       with open(loc, "r") as incif:
-          for elem in self.elements:
+        for elem in self.elements:
+          if self.disp == True:
             switch = True
             for line in incif:
               if  line.startswith(f" {elem} ") and switch:
-                      switch = False
-                      if "(" in line.split(" ")[3]:
-                          fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
-                          fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
-                          out[f"{elem}_anoms_SD"] = (fp,fdp)
-                      else:
-                          fp = float(line.split(" ")[2])
-                          fdp = float(line.split(" ")[3])
-                          out[f"{elem}_anoms"] = (fp,fdp)
-            incif.seek(0)
-          switch2 = False
-          for line in incif:              
-              if line.startswith("  _atom_site_refinement_flags_occupancy") or line.startswith("  _atom_site_refinement_flags_posn"):
-                  switch2 = True
-                  continue
-              if switch2:
-                  if line.startswith("\n"):
-                      switch2 = False
-                  else:
-                      try:
-                        lin = line.split(" ")
-                        atom = lin[1]
-                        ueq = lin[6].split("(")[0]
-                        ueq_delta = lin[6].split("(")[1][:-1]
-                        out[f"{atom}_ueq_SD"] = (float(ueq), int(ueq_delta))
-                      except:
-                        print("Skipped some Ueqs")
+                switch = False
+                if "(" in line.split(" ")[3]:
+                  fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
+                  fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
+                  out[f"{elem}_anoms_SD"] = (fp,fdp)
+                else:
+                  fp = float(line.split(" ")[2])
+                  fdp = float(line.split(" ")[3])
+                  out[f"{elem}_anoms"] = (fp,fdp)
+          incif.seek(0)
+        switch2 = False
+        for line in incif:              
+          if line.startswith("  _atom_site_refinement_flags_occupancy") or line.startswith("  _atom_site_refinement_flags_posn"):
+            switch2 = True
+            continue
+          if switch2:
+            if line.startswith("\n"):
+              switch2 = False
+            else:
+              try:
+                lin = line.split(" ")
+                atom = lin[1]
+                ueq = lin[6].split("(")[0]
+                ueq_delta = lin[6].split("(")[1][:-1]
+                out[f"{atom}_ueq_SD"] = (float(ueq), int(ueq_delta))
+              except:
+                print("Skipped some Ueqs")
       return out
 
     def get_elements(self):
@@ -432,14 +442,14 @@ class FAPJob:                                   # one FAPjob manages the refinem
 
     def setupIns(self):
       self.log_sth(f"base_path:{self.base_path};energy_source:{self.energy_source};solution_name:{self.solution_name}")
-      
+
       if self.energy_source == "header":
         self.setupInsHeader()
       elif self.energy_source == "ins":
         self.setupInsIns()
       else:
         self.setupInsDefault()
-        
+
       self.log_sth(".ins has been setup.")
 
     def setupInsHeader(self):
@@ -459,7 +469,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           out.write(line)
       self.correct_ins()      
       self.final_ins_path = f"{self.base_path}/{self.name}.ins"
-        
+
     def setupInsIns(self):
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
@@ -475,7 +485,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           out.write(line)      
       self.correct_ins()      
       self.final_ins_path = f"{self.base_path}/{self.name}.ins" 
-      
+
     def setupInsDefault(self):
       with open(self.solution_name, "r") as inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
         for line in inp:
@@ -489,17 +499,17 @@ class FAPJob:                                   # one FAPjob manages the refinem
         with open(self.final_ins_path, "r") as file:
           switch = False
           for line in file:
-              if line == "REM <dispersion\n":
-                  self.log_sth("DISPERSION line detected!")
-                  switch = True
-                  continue
-              if switch:
-                  if "REM  <" in line:
-                      print(line)
-                      continue
-                  switch = False
-                  continue
-              temp_ins.append(line)
+            if line == "REM <dispersion\n":
+              self.log_sth("DISPERSION line detected!")
+              switch = True
+              continue
+            if switch:
+              if "REM  <" in line:
+                print(line)
+                continue
+              switch = False
+              continue
+            temp_ins.append(line)
           print(temp_ins)
         with open(self.final_ins_path, "w") as file:
             for line in temp_ins:
@@ -589,7 +599,7 @@ class FAP2(PT):
     self.ins_name = buffer[-1]
     self.solution_path = "\\".join(buffer)
     print(f"Your solution lies at:\n{'/'.join(buffer)} with name {self.ins_name}")
-    
+
   def prepare(self):  #new version 30.05.2023
     hkls_paths = {}
     joblist = []
@@ -637,10 +647,9 @@ class FAP2(PT):
             new_job = self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, keys)
             if new_job.base_path != "":
               joblist.append(new_job)
-            else: # This is the case if fodler already existed, then we will not append the Job to the list
+            else: # This is the case if folder already existed, then we will not append the Job to the list
               print("!!!!Error during preparation of joblist!!!!")
               print("Skipping job with ", hkl, elements, hkls_paths,energy_source)
-              pass
       else:
         joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths,energy_source))
     return joblist
@@ -675,42 +684,42 @@ class FAP2(PT):
             )
 
   def prepare_benchmarkjob(self, key, elements, hkls_paths, energy_source, keys):
-        nos2_dict_cp = self.nos2_dict.copy()
-        try:
-          for keyy in keys:
-            k, m = keyy.split(":")
-            nos2_dict_cp[k.strip(" ")] = m.strip(" ").strip("\n")
-        except:
-            with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
-                main_out.write(f"Failed to read instructions for {keys} in benchmarkfile")
-        print(nos2_dict_cp)
-        meth_temp =  nos2_dict_cp["basis_name"].replace('(', '').replace(')', '')
-        fun_temp =  nos2_dict_cp["method"]
-        new_dir = f"{self.outdir}\{key}_{fun_temp}_{meth_temp}"
-        if os.path.exists(new_dir):
-          return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
-                                                            # I changed this to return an empty Job, to not have a "None" in the job list in 
-                                                            # case the folder already exists, which crashes long benchmarks and is furstrating...
-        os.mkdir(new_dir)
-        shutil.copy(hkls_paths[key], new_dir)
-        shutil.copy(self.solution_path, new_dir)
-        poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
-        if os.path.exists(poss_ins_path):
-            shutil.copy(poss_ins_path, new_dir)
-        return(FAPJob(                                   # create the FAPJob object here
-                              base_path = new_dir, 
-                              solution_name = self.solution_path, 
-                              name = f"{key}_{fun_temp}_{meth_temp}", 
-                              energy_source = energy_source,
-                              resolution = self.resolution,  
-                              disp = self.perform_disp_ref, 
-                              elements = elements,
-                              nos2 = True,
-                              benchmark = True, 
-                              growed = self.growed,
-                              nos2_dict = nos2_dict_cp.copy()
-                              )  
-                      )
+    nos2_dict_cp = self.nos2_dict.copy()
+    try:
+      for keyy in keys:
+        k, m = keyy.split(":")
+        nos2_dict_cp[k.strip(" ")] = m.strip(" ").strip("\n")
+    except:
+      with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
+        main_out.write(f"Failed to read instructions for {keys} in benchmarkfile")
+    print(nos2_dict_cp)
+    meth_temp =  nos2_dict_cp["basis_name"].replace('(', '').replace(')', '')
+    fun_temp =  nos2_dict_cp["method"]
+    new_dir = f"{self.outdir}\{key}_{fun_temp}_{meth_temp}"
+    if os.path.exists(new_dir):
+      return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
+                                                        # I changed this to return an empty Job, to not have a "None" in the job list in 
+                                                        # case the folder already exists, which crashes long benchmarks and is furstrating...
+    os.mkdir(new_dir)
+    shutil.copy(hkls_paths[key], new_dir)
+    shutil.copy(self.solution_path, new_dir)
+    poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
+    if os.path.exists(poss_ins_path):
+      shutil.copy(poss_ins_path, new_dir)
+    return(FAPJob(                                   # create the FAPJob object here
+                          base_path = new_dir, 
+                          solution_name = self.solution_path, 
+                          name = f"{key}_{fun_temp}_{meth_temp}", 
+                          energy_source = energy_source,
+                          resolution = self.resolution,  
+                          disp = self.perform_disp_ref, 
+                          elements = elements,
+                          nos2 = True,
+                          benchmark = True, 
+                          growed = self.growed,
+                          nos2_dict = nos2_dict_cp.copy()
+                          )  
+                  )
 
   def prepare_dispjob(self, key, elements, hkls_paths,energy_source):
     nos2_dict_cp = self.nos2_dict.copy()
@@ -725,70 +734,70 @@ class FAP2(PT):
     if self.brennan:
       disp_sources.append("brennan")
     for disp_source in disp_sources:  
-        if self.benchmark:                              #also check if a benchmark regarding functionals/methods should be performed
-          with open(self.benchmarkfile_path, "r") as bmfp:
-            for line in bmfp:
-              fun, meth = line.split(",")
-              meth = meth.rstrip("\n")
-              meth_temp =  meth.replace('(', '').replace(')', '')
-              new_dir = f"{self.outdir}\{key}_{disp_source}_{fun}_{meth_temp}"
-              nos2_dict_cp["basis_name"] = meth
-              nos2_dict_cp["method"] = fun
-              if os.path.exists(new_dir):
-                i = 1
-                while os.path.exists(new_dir):
-                  new_dir = new_dir + f"_{i}"
-                  i += 1                                
-              os.mkdir(new_dir)
-              shutil.copy(hkls_paths[key], new_dir)
-              shutil.copy(self.solution_path, new_dir)
-              poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
-              if os.path.exists(poss_ins_path):
-                  shutil.copy(poss_ins_path, new_dir)
-              return(FAPJob(                                   # create the FAPJob object here
-                                    base_path = new_dir,
-                                    solution_name = self.solution_path, 
-                                    name = key,
-                                    energy_source = energy_source, 
-                                    resolution = self.resolution,  
-                                    disp = self.perform_disp_ref,
-                                    indiv_disps = indiv_disps, 
-                                    disp_source= disp_source, 
-                                    elements = elements,
-                                    nos2 = True, 
-                                    growed = self.growed,
-                                    nos2_dict = nos2_dict_cp.copy()
-                                    )  
-                            )
-        else:
-          new_dir = f"{self.outdir}\{key}_{disp_source}"
-          if os.path.exists(new_dir):
-                i = 1
-                while os.path.exists(new_dir):
-                  new_dir = new_dir + f"_{i}"
-                  i += 1 
-          os.mkdir(new_dir)
-          shutil.copy(hkls_paths[key], new_dir)
-          shutil.copy(self.solution_path, new_dir)
-          poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
-          print(poss_ins_path)
-          if os.path.exists(poss_ins_path):
+      if self.benchmark:                              #also check if a benchmark regarding functionals/methods should be performed
+        with open(self.benchmarkfile_path, "r") as bmfp:
+          for line in bmfp:
+            fun, meth = line.split(",")
+            meth = meth.rstrip("\n")
+            meth_temp =  meth.replace('(', '').replace(')', '')
+            new_dir = f"{self.outdir}\{key}_{disp_source}_{fun}_{meth_temp}"
+            nos2_dict_cp["basis_name"] = meth
+            nos2_dict_cp["method"] = fun
+            if os.path.exists(new_dir):
+              i = 1
+              while os.path.exists(new_dir):
+                new_dir = new_dir + f"_{i}"
+                i += 1                                
+            os.mkdir(new_dir)
+            shutil.copy(hkls_paths[key], new_dir)
+            shutil.copy(self.solution_path, new_dir)
+            poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
+            if os.path.exists(poss_ins_path):
               shutil.copy(poss_ins_path, new_dir)
-          return(FAPJob( 
-                                    base_path = new_dir, 
-                                    solution_name = self.solution_path, 
-                                    name = key, 
-                                    energy_source = energy_source,
-                                    resolution = self.resolution,  
-                                    disp = self.perform_disp_ref,
-                                    indiv_disps = indiv_disps,  
-                                    disp_source = disp_source, 
-                                    elements = elements,
-                                    nos2 = self.use_nosphera2, 
-                                    growed = self.growed,
-                                    nos2_dict = nos2_dict_cp.copy()
-                                    )
+            return(FAPJob(                                   # create the FAPJob object here
+                                  base_path = new_dir,
+                                  solution_name = self.solution_path, 
+                                  name = key,
+                                  energy_source = energy_source, 
+                                  resolution = self.resolution,  
+                                  disp = self.perform_disp_ref,
+                                  indiv_disps = indiv_disps, 
+                                  disp_source= disp_source, 
+                                  elements = elements,
+                                  nos2 = True, 
+                                  growed = self.growed,
+                                  nos2_dict = nos2_dict_cp.copy()
+                                  )  
                           )
+      else:
+        new_dir = f"{self.outdir}\{key}_{disp_source}"
+        if os.path.exists(new_dir):
+          i = 1
+          while os.path.exists(new_dir):
+            new_dir = new_dir + f"_{i}"
+            i += 1 
+        os.mkdir(new_dir)
+        shutil.copy(hkls_paths[key], new_dir)
+        shutil.copy(self.solution_path, new_dir)
+        poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
+        print(poss_ins_path)
+        if os.path.exists(poss_ins_path):
+            shutil.copy(poss_ins_path, new_dir)
+        return(FAPJob( 
+                                  base_path = new_dir, 
+                                  solution_name = self.solution_path, 
+                                  name = key, 
+                                  energy_source = energy_source,
+                                  resolution = self.resolution,  
+                                  disp = self.perform_disp_ref,
+                                  indiv_disps = indiv_disps,  
+                                  disp_source = disp_source, 
+                                  elements = elements,
+                                  nos2 = self.use_nosphera2, 
+                                  growed = self.growed,
+                                  nos2_dict = nos2_dict_cp.copy()
+                                  )
+                        )
 
   def prepare_outdir(self):
     i = 1                                                   # add a new outputfolder
@@ -834,11 +843,11 @@ class FAP2(PT):
   def print_formula(self):   
     self.set_up_params()
     joblist = self.prepare()
-    
+
     print(f"Initial Joblist: {joblist}")
     print(f"Wrote results to {self.outdir}")
     print(f"NospherA2 dict: {self.nos2_dict}")
-    
+
     with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
         main_out.write(f"Joblist: \t{joblist}")
 
@@ -860,36 +869,36 @@ class FAP2(PT):
     exceptions = ["MaxIndices", "MinIndices", "FileMaxIndices", "FileMinIndices", "Redundancy", "Ueqs", "DISPS"]
 
     with open(f"{self.base_path}/output.txt", "r") as dat:
-        output = {}
-        #stats = {}
-        ueqs = {}
-        for line in dat: 
-            if ":\n" in line:
-                output["Ueqs"] = ueqs
-                #output = output.append(stats, ignore_index=True)
-                output["Name"] = line.split(":")[0]
-            for key in hkl_stats:
-                if key in line:
-                    if key in exceptions:
-                      if key == "DISPS":
-                        output[key] = "placeholder"
-                      else:
-                        output[key] = re.findall(f"{key}:.+,",line)[0].split(")")[0].split(":")[1]+")"
-                    else:
-                        try:
-                            output[key] = re.findall(f"{key}:.+,",line)[0].split(",")[0].split(":")[1]
-                        except:
-                            if key == "a" or key == "b" or key == "c":
-                                continue
-                            else: 
-                                print(f"Failed at {key}")  
-                if "_ueq" in line:
-                    line_items = line.split(")")
-                    for itm in line_items:
-                        if "_ueq" in itm:
-                            atom = itm.split(":")[0][1:]
-                            ueqs[atom] = itm.split(":")[1]+")"
-        output["Ueqs"] = ueqs
+      output = {}
+      #stats = {}
+      ueqs = {}
+      for line in dat: 
+        if ":\n" in line:
+          output["Ueqs"] = ueqs
+          #output = output.append(stats, ignore_index=True)
+          output["Name"] = line.split(":")[0]
+        for key in hkl_stats:
+          if key in line:
+            if key in exceptions:
+              if key == "DISPS":
+                output[key] = "placeholder"
+              else:
+                output[key] = re.findall(f"{key}:.+,",line)[0].split(")")[0].split(":")[1]+")"
+            else:
+              try:
+                output[key] = re.findall(f"{key}:.+,",line)[0].split(",")[0].split(":")[1]
+              except:
+                if key == "a" or key == "b" or key == "c":
+                  continue
+                else: 
+                  print(f"Failed at {key}")  
+          if "_ueq" in line:
+            line_items = line.split(")")
+            for itm in line_items:
+              if "_ueq" in itm:
+                atom = itm.split(":")[0][1:]
+                ueqs[atom] = itm.split(":")[1]+")"
+      output["Ueqs"] = ueqs
 
 
 FAP2_instance = FAP2()
