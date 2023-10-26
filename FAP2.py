@@ -57,7 +57,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 disp_source = "", 
                 elements = [],
                 nos2 = False, 
-                growed = False
+                growed = False,
+                benchmark = False
                 ):
         self.base_path = base_path              #variable for the path to the solution .ins file for this structure
         self.solution_name = solution_name      #name of the copied ins for the structure solution
@@ -70,6 +71,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.indiv_disps = indiv_disps
         self.elements = elements                #lists for elements that should get refined for dispersion
         self.nos2 = nos2                        #decide whether NoS2 is being used
+        self.benchmark = benchmark
         self.nos2_dict = nos2_dict              #all parameters from nosphera2 settings
         self.final_ins_path = ""                #will be set depending on other params in method setup ins
         self.refine_results = {
@@ -546,16 +548,7 @@ class FAP2(PT):
       if self.perform_disp_ref:
         joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths,energy_source))
       elif self.benchmark:
-        with open(self.benchmarkfile_path, "r") as bmfp:  # NoSpherA2 possible keywords: "basis_name","method", 
-                                                          #                              "multiplicity", "full_HAR",
-                                                          #                              "ncpus", "mem", "charge", 
-                                                          #                              "Max_HAR_Cycles","becke_accuracy",
-                                                          #                              "Relativistic", "h_aniso", 
-                                                          #                              "h_afix", "add_disp", 
-                                                          #                              "cluster_radius", "DIIS",
-                                                          #                              "cluster_grow", "ORCA_SCF_Conv",
-                                                          #                              "ORCA_SCF_Strategy", "ORCA_Solvation",
-                                                          #                              "pySCF_Damping"]
+        with open(self.benchmarkfile_path, "r") as bmfp:
           for line in bmfp:
             line.strip(" ")
             if line == "\n":
@@ -633,7 +626,8 @@ class FAP2(PT):
                               resolution = self.resolution,  
                               disp = self.perform_disp_ref, 
                               elements = elements,
-                              nos2 = True, 
+                              nos2 = True,
+                              benchmark = True, 
                               growed = self.growed,
                               nos2_dict = nos2_dict_cp.copy()
                               )  
