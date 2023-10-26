@@ -1,26 +1,26 @@
 
 <!-- #include tool-h3 gui\blocks\tool-h3.htm;image=#image;colspan=1;1; -->
-<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=h3-FAP2_1; help_ext=FAP2_1;1; -->
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=h3-SISYPHOS_1; help_ext=SISYPHOS_1;1; -->
 
 
   $+
     html.Snippet(GetVar(default_link),
     "value=Reload Plugin",
-    "onclick=py.run BaseDir()\util\pyUtil\PluginLib\plugin-FAP2\FAP2.py",
+    "onclick=py.run BaseDir()\util\pyUtil\PluginLib\plugin-SISYPHOS\SISYPHOS.py",
     )
   $-
 
   $+
     html.Snippet(GetVar(default_link),
     "value=Settings",
-    "onclick=spy.EditParams(fap2)",
+    "onclick=spy.EditParams(sisyphos)",
     )
   $-
 
   $+
     html.Snippet(GetVar(default_link),
     "value=Open Folder",
-    "onclick=shell  BaseDir()\util\pyUtil\PluginLib\plugin-FAP2\FAP2.py",
+    "onclick=shell  BaseDir()\util\pyUtil\PluginLib\plugin-SISYPHOS\SISYPHOS.py",
     )
   $-
 

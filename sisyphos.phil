@@ -1,5 +1,4 @@
-
-fap2{
+sisyphos{
   element_string = ""
   .type = str
   
@@ -45,9 +44,9 @@ fap2{
   gui{
     location = 'tools'
       .type = str
-      .help = The tab item where the FAP GUI shall appear.
+      .help = The tab item where the SISYPHOS GUI shall appear.
     before = 'images'
       .type = str
-      .help = The tool before which the FAP GUI shall appear.
+      .help = The tool before which the SISYPHOS GUI shall appear.
     }
 }

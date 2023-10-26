@@ -1,0 +1,257 @@
+<!-- #include tool-top gui/blocks/tool-top.htm;image=#image;onclick=#onclick;1; -->
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_1; help_ext=SISYPHOS_1;1; -->
+<td ALIGN='left' width='100%'>
+    <b>Welcome to SISYPHOS!</b>
+    <br>
+     Please choose a directory in which your data and your structure 
+     solution is stored in. Please give the atoms for which you want 
+     to refine dispersion values below. You can also give a correction 
+     for the read-in energy values derived from your measurement folders. 
+     Good luck!
+</td>
+
+
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
+<td ALIGN='left' width='33%'>
+    <b><a href="spy.SISYPHOS.setBasePath()">Set working dir</a>
+</td>
+<td ALIGN='center' width='33%'>
+    <b><a href="spy.SISYPHOS.setSolutionPath()">Set solution .ins</a>
+</td>
+<!-- #ignoreif not spy.GetParam('SISYPHOS.benchmark_mode')
+<td ALIGN='right' width='34%'>
+    <b><a href="spy.SISYPHOS.setBenchmarkFile()">Set benchmark file</a>
+</td>
+#ignoreif -->
+
+<!-- #ignoreif not spy.GetParam('SISYPHOS.perform_disp_ref')
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name='PATH';help_ext=Path;1 -->
+<td width='23%'>
+    <b>%Elements%:</b>
+</td>
+
+<td align='left'>
+  $+
+    html.Snippet("gui/snippets/input-text",
+    "name=element_string",
+    "width=100%",
+    "value=spy.GetParam('SISYPHOS.element_string')",
+    "onchange=spy.SetParam('SISYPHOS.element_string', html.GetValue('~name~'))")
+  $-
+</td>
+
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name='PATH';help_ext=Path;1 -->
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Same DISP",
+    "label=Same DISP",
+    "checked=spy.GetParam('SISYPHOS.same_disp')",
+    "oncheck=spy.SetParam('SISYPHOS.same_disp','True')>>spy.SetParam('SISYPHOS.indiv_disp','False')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.same_disp','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Individual DISP",
+    "label=Individual DISP",
+    "checked=spy.GetParam('SISYPHOS.indiv_disp')",
+    "oncheck=spy.SetParam('SISYPHOS.indiv_disp','True')>>spy.SetParam('SISYPHOS.same_disp','False') >>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.indiv_disp','False')>>html.Update()"
+    )
+  $-
+</td>
+
+#ignoreif -->
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=SISYPHOS_2;help_ext=Path;1 -->
+<td width='23%'>
+    <b>%Adjustment / eV%:</b>
+</td>
+<td align='left'>
+  $+
+    html.Snippet("gui/snippets/input-text",
+    "name=adjustment_eV",
+    "width=100%",
+    "value=spy.GetParam('SISYPHOS.adjustment_eV')",
+    "onchange=spy.SetParam('SISYPHOS.adjustment_eV', html.GetValue('~name~'))")
+  $-
+</td>
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=SISYPHOS_2;help_ext=Path;1 -->
+<td width='23%'>
+    <b>%Resolution / Angstroms%:</b>
+</td>
+<td align='left'>
+  $+
+    html.Snippet("gui/snippets/input-text",
+    "name=adjustment",
+    "width=100%",
+    "value=spy.GetParam('SISYPHOS.resulution')",
+    "onchange=spy.SetParam('SISYPHOS.resolution', html.GetValue('~name~'))")
+  $-
+</td>
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Use NoSpherA2",
+    "label=Use NoSpherA2",
+    "checked=spy.GetParam('SISYPHOS.use_nos2')",
+    "oncheck=spy.SetParam('SISYPHOS.use_nos2','True')>>spy.SetParam('snum.NoSpherA2.Calculate', 'True')>>spy.SetParam('snum.NoSpherA2.source','ORCA 5.0')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.use_nos2','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Benchmark Mode",
+    "label=Benchmark Mode",
+    "checked=spy.GetParam('SISYPHOS.benchmark_mode')",
+    "oncheck=spy.SetParam('SISYPHOS.benchmark_mode','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.benchmark_mode','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Update Weight",
+    "label=Update Weight",
+    "checked=spy.GetParam('SISYPHOS.update_weight')",
+    "oncheck=spy.SetParam('SISYPHOS.update_weight','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.update_weight','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=DISP Refinement",
+    "label=DISP Refinement",
+    "checked=spy.GetParam('SISYPHOS.perform_disp_ref')",
+    "oncheck=spy.SetParam('SISYPHOS.perform_disp_ref','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.perform_disp_ref','False')>>html.Update()"
+    )
+  $-
+</td>
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+
+<!-- #ignoreif not spy.GetParam('SISYPHOS.use_nos2')
+<!-- #include h3-refine_NoSpherA2SISYPHOS $GetVar(SISYPHOS_plugin_path)\..\..\NoSpherA2\h3-refine_NoSpherA2-extras.htm;gui\blocks\tool-h3-off.htm;image=h3-Refine_NoSpherA2;onclick=;colspan=1;2; -->
+#ignoreif -->
+
+
+<!-- #ignoreif not spy.GetParam('SISYPHOS.perform_disp_ref')
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Refined DISPs",
+    "label=Refined DISPs",
+    "checked=spy.GetParam('SISYPHOS.refine_disps')",
+    "oncheck=spy.SetParam('SISYPHOS.refine_disps','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.refine_disps','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Henke",
+    "label=Henke",
+    "checked=spy.GetParam('SISYPHOS.henke')",
+    "oncheck=spy.SetParam('SISYPHOS.henke','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.henke','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Sasaki",
+    "label=Sasaki",
+    "checked=spy.GetParam('SISYPHOS.sasaki')",
+    "oncheck=spy.SetParam('SISYPHOS.sasaki','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.sasaki','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Brennan",
+    "label=Brennan",
+    "checked=spy.GetParam('SISYPHOS.brennan')",
+    "oncheck=spy.SetParam('SISYPHOS.brennan','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.brennan','False')>>html.Update()"
+    )
+  $-
+</td>
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+#ignoreif -->
+
+
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
+<td width='2%' align="center">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Extract energies from file names",
+    "label=Extract energies from file names",
+    "checked=spy.GetParam('SISYPHOS.energies_from_headers')",
+    "oncheck=spy.SetParam('SISYPHOS.energies_from_headers','True')>>spy.SetParam('SISYPHOS.energies_from_ins','False')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.energies_from_headers','False')>>html.Update()"
+    )
+  $-
+</td>
+<td width='2%' align="center">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Extract energies from .ins",
+    "label=Extract energies from .ins",
+    "checked=spy.GetParam('SISYPHOS.energies_from_ins')",
+    "oncheck=spy.SetParam('SISYPHOS.energies_from_headers','False')>>spy.SetParam('SISYPHOS.energies_from_ins','True') >>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('SISYPHOS.energies_from_ins','False')>>html.Update()"
+    )
+  $-
+</td>
+If ticked, files must be of "NAME_ENERGY type" and every .hkl file MUST be accompanied by a .ins file with the same name
+<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
+
+
+
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
+$+
+  html.Snippet("gui/snippets/gui-link-button",
+  "value='Start'",
+  "onclick=spy.SISYPHOS.print_formula()",
+  "bgcolor=GetVar(HtmlTableRowBgColour)",
+  "td1=<td width="29%" align='center'>
+  ",)
+$-
+
+<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+
+<!-- #include h3-SISYPHOS-extras $GetVar(SISYPHOS_plugin_path)\h3-SISYPHOS-extras.htm;gui\blocks\tool-h3-off.htm;image=h3-SISYPHOS_extras;onclick=;colspan=1;2; -->
+<!-- #include tool-footer gui/blocks/tool-footer.htm;colspan=2;1; -->
