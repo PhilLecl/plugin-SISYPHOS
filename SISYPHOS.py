@@ -43,7 +43,7 @@ p_htm = d['p_htm']
 p_img = eval(d['p_img'])
 p_scope = d['p_scope']
 
-OV.SetVar('FAP_plugin_path', p_path)
+OV.SetVar('SISYPHOS_plugin_path', p_path)
 
 class FAPJob:                                   # one FAPjob manages the refinement, logging and output of one data set of the same structure as all other jobs
     def __init__(self, 
@@ -117,7 +117,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         else:
           olex.m("fix disp -c")
         OV.SetParam('snum.NoSpherA2.use_aspherical',False)
-        if OV.GetParam('fap2.update_weight') == True:
+        if OV.GetParam('SISYPHOS.update_weight') == True:
           OV.SetParam('snum.refinement.update_weight',True)
         else:
           OV.SetParam('snum.refinement.update_weight',False)
@@ -532,9 +532,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
         print("Faield to extract information")
         self.log_sth("Failed to extract information!")
 
-class FAP2(PT):
+class SISYPHOS(PT):
   def __init__(self):
-    super(FAP2, self).__init__()
+    super(SISYPHOS, self).__init__()
     self.p_name = p_name
     self.p_path = p_path
     self.p_scope = p_scope
@@ -565,11 +565,11 @@ class FAP2(PT):
     self.outdir = ""
     if not from_outside:
       self.setup_gui()
-    OV.registerFunction(self.print_formula,True,"FAP2")
-    OV.registerFunction(self.setBasePath,True,"FAP2")
-    OV.registerFunction(self.evaluate,True,"FAP2")
-    OV.registerFunction(self.setSolutionPath,True,"FAP2")
-    OV.registerFunction(self.setBenchmarkFile,True,"FAP2")
+    OV.registerFunction(self.print_formula,True,"SISYPHOS")
+    OV.registerFunction(self.setBasePath,True,"SISYPHOS")
+    OV.registerFunction(self.evaluate,True,"SISYPHOS")
+    OV.registerFunction(self.setSolutionPath,True,"SISYPHOS")
+    OV.registerFunction(self.setBenchmarkFile,True,"SISYPHOS")
 
   def setBenchmarkFile(self):
     out = olex.f('fileOpen("Please choose a text benchmark file", "*", filepath())')
@@ -807,25 +807,25 @@ class FAP2(PT):
     os.mkdir(self.outdir)
     self.output_base_path = self.outdir  
 
-  def set_up_params(self):                              # Handels all settings made in the interface (fap2.htm)   
-    self.elem_string = OV.GetParam("fap2.element_string")
-    if OV.GetParam("fap2.adjustment_eV"):
-      self.adjustment_eV = float(OV.GetParam("fap2.adjustment_eV"))
-    if OV.GetParam("fap2.resolution"):
-      self.resolution = float(OV.GetParam("fap2.resolution"))
-    self.use_nosphera2 = OV.GetParam("fap2.use_nos2")
-    self.perform_disp_ref = OV.GetParam("fap2.perform_disp_ref")
+  def set_up_params(self):                              # Handels all settings made in the interface (SISYPHOS.htm)   
+    self.elem_string = OV.GetParam("sisyphos.element_string")
+    if OV.GetParam("sisyphos.adjustment_eV"):
+      self.adjustment_eV = float(OV.GetParam("sisyphos.adjustment_eV"))
+    if OV.GetParam("sisyphos.resolution"):
+      self.resolution = float(OV.GetParam("sisyphos.resolution"))
+    self.use_nosphera2 = OV.GetParam("sisyphos.use_nos2")
+    self.perform_disp_ref = OV.GetParam("sisyphos.perform_disp_ref")
     if self.perform_disp_ref:
-      self.indiv_disp = OV.GetParam("fap2.indiv_disp")
-      self.indiv_disp = OV.GetParam("fap2.same_disp")
-      self.elem_string = OV.GetParam("fap2.element_string")
-    self.benchmark = OV.GetParam("fap2.benchmark_mode")
-    self.henke = OV.GetParam("fap2.henke")
-    self.sasaki = OV.GetParam("fap2.sasaki")
-    self.brennan = OV.GetParam("fap2.brennan")
-    self.energies_from_headers = OV.GetParam("fap2.energies_from_headers")
-    self.energy_from_ins = OV.GetParam("fap2.energies_from_ins")
-    self.same_disp = OV.GetParam("fap2.energies_from_ins")
+      self.indiv_disp = OV.GetParam("sisyphos.indiv_disp")
+      self.indiv_disp = OV.GetParam("sisyphos.same_disp")
+      self.elem_string = OV.GetParam("sisyphos.element_string")
+    self.benchmark = OV.GetParam("sisyphos.benchmark_mode")
+    self.henke = OV.GetParam("sisyphos.henke")
+    self.sasaki = OV.GetParam("sisyphos.sasaki")
+    self.brennan = OV.GetParam("sisyphos.brennan")
+    self.energies_from_headers = OV.GetParam("sisyphos.energies_from_headers")
+    self.energy_from_ins = OV.GetParam("sisyphos.energies_from_ins")
+    self.same_disp = OV.GetParam("sisyphos.energies_from_ins")
     nos_params = ["basis_name","method", 
                   "ncpus", "mem", "charge", 
                   "multiplicity", "full_HAR",
@@ -858,7 +858,7 @@ class FAP2(PT):
         print(f"ERROR! \nDidnt (fully) run {job.name}!\nSee log for additional info.")
         print(error)
     print(joblist)
-    print(f"FAP2 run finished, results and log in {self.base_path}")
+    print(f"SISYPHOS run finished, results and log in {self.base_path}")
 
   def evaluate(self):
     hkl_stats = ["Name","TotalReflections", "UniqueReflections", "FriedelOppositesMerged", "InconsistentEquivalents", "SystematicAbsencesRemoved", "MinD", \
@@ -901,4 +901,4 @@ class FAP2(PT):
       output["Ueqs"] = ueqs
 
 
-FAP2_instance = FAP2()
+SISYPHOS_instance = SISYPHOS()
