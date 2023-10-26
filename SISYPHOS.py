@@ -14,7 +14,7 @@ import re
 import shutil
 #import sys
 from return_WL_energy import ret_wl
-from time import sleep
+#from time import sleep
 #import time
 from PluginTools import PluginTools as PT
 #import pandas as pd
@@ -90,14 +90,21 @@ class FAPJob:                                   # one FAPjob manages the refinem
             self.log_sth("obj.%s = %r" % (attr, getattr(self, attr)))
           self.log_sth(f"Nos2 properties: \t {nos2_dict}")
 
-    def log_sth(self,log):
+    def log_sth(self, log:str) -> None:
+      """Writes given string to the log file of the base_path
+
+      Args:
+          log (str): String to be written in the log
+      """
       msg = f"{self.name}:\t{log}\n"
       with open(f"{self.base_path}/log.dat", "a") as out:
         out.write(msg)
       with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
         main_out.write(msg)
 
-    def refine(self):
+    def refine(self) -> None:
+      """ Runs the refinement using predefined settings
+      """
       try:
         olex.m(f"reap {self.final_ins_path}")
         self.log_sth(f"Was able to load .ins: {self.final_ins_path}")
@@ -156,7 +163,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth(str(error))
         self.log_sth("Failed during refinenement!")
 
-    def configure_ORCA(self):
+    def configure_ORCA(self) -> None:
       olx.xf.EndUpdate()
       if OV.HasGUI():
         olx.Refresh()
@@ -171,7 +178,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         OV.SetParam('snum.NoSpherA2.multiplicity', "1")
 
 
-    def extract_info(self):
+    def extract_info(self) -> None:
       try:
         l = ['a', 'b', 'c', 'alpha', 'beta', 'gamma']
         d = {}
@@ -301,7 +308,15 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.log_sth(stats2)
       self.log_sth(stats3)
 
-    def parse_cif(self, loc):
+    def parse_cif(self, loc: str) -> dict:
+      """Parses the cif given by loc and returns a dictionary of parsed information
+
+      Args:
+          loc (str): Path to the .cif file to be analyzed
+
+      Returns:
+          dict: Result dictionary from cif
+      """
       print("loc", loc)
       dat_names = ["mu", 
         "wavelength", 
@@ -434,13 +449,13 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 print("Skipped some Ueqs")
       return out
 
-    def get_elements(self):
+    def get_elements(self) -> list:
       elements = []
       for elem in str(olx.xf.GetFormula('list')).split(','):
         elements.append(elem.split(":")[0])
       return elements  
 
-    def setupIns(self):
+    def setupIns(self) -> None:
       self.log_sth(f"base_path:{self.base_path};energy_source:{self.energy_source};solution_name:{self.solution_name}")
 
       if self.energy_source == "header":
@@ -452,7 +467,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
 
       self.log_sth(".ins has been setup.")
 
-    def setupInsHeader(self):
+    def setupInsHeader(self) -> None:
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
       with open(self.solution_name, "r") as inp, open(old_ins, "r") as old_inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
@@ -470,7 +485,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.correct_ins()      
       self.final_ins_path = f"{self.base_path}/{self.name}.ins"
 
-    def setupInsIns(self):
+    def setupInsIns(self) -> None:
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
 
@@ -486,14 +501,14 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.correct_ins()      
       self.final_ins_path = f"{self.base_path}/{self.name}.ins" 
 
-    def setupInsDefault(self):
+    def setupInsDefault(self) -> None:
       with open(self.solution_name, "r") as inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
         for line in inp:
           out.write(line)
       self.correct_ins()
       self.final_ins_path = f"{self.base_path}/{self.name}.ins"
 
-    def correct_ins(self):
+    def correct_ins(self) -> None:
       if self.disp and self.disp_source != "refined":
         temp_ins = []
         with open(self.final_ins_path, "r") as file:
@@ -517,7 +532,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth("Corrected .ins for dispersion")  
       else: self.log_sth("Did not correct for DISP")
 
-    def run(self):
+    def run(self) -> None:
       self.setupIns()
       if os.path.getsize(self.final_ins_path) == 0:
         self.log_sth("Failed to init the .ins, filesize = 0!")
@@ -571,15 +586,15 @@ class SISYPHOS(PT):
     OV.registerFunction(self.setSolutionPath,True,"SISYPHOS")
     OV.registerFunction(self.setBenchmarkFile,True,"SISYPHOS")
 
-  def setBenchmarkFile(self):
+  def setBenchmarkFile(self) -> None:
     out = olex.f('fileOpen("Please choose a text benchmark file", "*", filepath())')
     self.benchmarkfile_path = out
     print(f"Benchmarkfile loaded froms:\n{out}")
 
-  def chooseDir(self):
+  def chooseDir(self) -> str:
     return olex.f('choosedir("Choose your data folder")')
 
-  def setBasePath(self):
+  def setBasePath(self) -> None:
     out= ""
     try:
       out = self.chooseDir()
@@ -593,14 +608,14 @@ class SISYPHOS(PT):
       self.base_path = "\\".join(buffer)
       print(f"Your data lies at:\n{'/'.join(buffer)}")
 
-  def setSolutionPath(self):
+  def setSolutionPath(self) -> None:
     out = olex.f('fileOpen("Choose Your solution .ins file", "*.ins", filepath())')
     buffer = out.split("\\")
     self.ins_name = buffer[-1]
     self.solution_path = "\\".join(buffer)
     print(f"Your solution lies at:\n{'/'.join(buffer)} with name {self.ins_name}")
 
-  def prepare(self):  #new version 30.05.2023
+  def prepare(self) -> list:  #new version 30.05.2023
     hkls_paths = {}
     joblist = []
     elements = self.elem_string.split(",")
@@ -619,7 +634,7 @@ class SISYPHOS(PT):
             elif os.path.join("olex2", "temp") in root or os.path.join("olex2", "Wfn_job") in root:
               continue
             elif file.endswith(".hkl"):              
-                source_file = os.path.join(root, file)
+                #source_file = os.path.join(root, file)
                 name = os.path.splitext(file)[0]  # Extract the name without the extension
                 hkls_paths[name] = os.path.join(root,file)
     print(hkls_paths)
@@ -654,7 +669,7 @@ class SISYPHOS(PT):
         joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths,energy_source))
     return joblist
 
-  def prepare_defaultjob(self, key, elements, hkls_paths,energy_source):
+  def prepare_defaultjob(self, key:str, elements, hkls_paths:dict, energy_source)-> FAPJob:
     nos2_dict_cp = self.nos2_dict.copy()
     new_dir = f"{self.outdir}\{key}" 
     if os.path.exists(new_dir):
@@ -683,7 +698,7 @@ class SISYPHOS(PT):
                   )
             )
 
-  def prepare_benchmarkjob(self, key, elements, hkls_paths, energy_source, keys):
+  def prepare_benchmarkjob(self, key:str, elements:list, hkls_paths:dict, energy_source, keys) -> FAPJob:
     nos2_dict_cp = self.nos2_dict.copy()
     try:
       for keyy in keys:
@@ -721,7 +736,7 @@ class SISYPHOS(PT):
                           )  
                   )
 
-  def prepare_dispjob(self, key, elements, hkls_paths,energy_source):
+  def prepare_dispjob(self, key, elements, hkls_paths,energy_source) -> FAPJob:
     nos2_dict_cp = self.nos2_dict.copy()
     disp_sources = ["refined"]
     indiv_disps = False
@@ -799,7 +814,7 @@ class SISYPHOS(PT):
                                   )
                         )
 
-  def prepare_outdir(self):
+  def prepare_outdir(self) -> None:
     i = 1                                                   # add a new outputfolder
     while os.path.exists(f"{self.base_path}/FAPoutput"+str(i)):
       i += 1
@@ -807,7 +822,7 @@ class SISYPHOS(PT):
     os.mkdir(self.outdir)
     self.output_base_path = self.outdir  
 
-  def set_up_params(self):                              # Handels all settings made in the interface (SISYPHOS.htm)   
+  def set_up_params(self) -> None:                              # Handles all settings made in the interface (SISYPHOS.htm)   
     self.elem_string = OV.GetParam("sisyphos.element_string")
     if OV.GetParam("sisyphos.adjustment_eV"):
       self.adjustment_eV = float(OV.GetParam("sisyphos.adjustment_eV"))
@@ -840,7 +855,7 @@ class SISYPHOS(PT):
       self.nos2_dict[param] = OV.GetParam(f"snum.NoSpherA2.{param}")
     print(self.nos2_dict)
 
-  def print_formula(self):   
+  def print_formula(self) -> None:   #This one does the actual work
     self.set_up_params()
     joblist = self.prepare()
 
@@ -860,7 +875,7 @@ class SISYPHOS(PT):
     print(joblist)
     print(f"SISYPHOS run finished, results and log in {self.base_path}")
 
-  def evaluate(self):
+  def evaluate(self) -> None:
     hkl_stats = ["Name","TotalReflections", "UniqueReflections", "FriedelOppositesMerged", "InconsistentEquivalents", "SystematicAbsencesRemoved", "MinD", \
     "MaxD", "LimDmin", "LimDmax", "FilteredOff", "OmittedByUser", "OmittedReflections", "IntensityTransformed", "Rint", "Rsigma", "MeanIOverSigma", \
     "Completeness", "MaxIndices", "MinIndices", "FileMaxIndices", "FileMinIndices", "ReflectionAPotMax", "FriedelPairCount", "Redundancy","a", "b", "c", \
