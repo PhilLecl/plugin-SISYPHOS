@@ -1,6 +1,6 @@
 from asyncio.constants import LOG_THRESHOLD_FOR_CONNLOST_WRITES
 #from email.mime import base
-from unicodedata import name
+#from unicodedata import name
 from olexFunctions import OlexFunctions
 OV = OlexFunctions()
 import os
