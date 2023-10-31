@@ -94,6 +94,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
 
     def __str__(self) -> str:
       return f'Job with following options:\n\tname:\t{self.name}\n\tbase_path:\t{self.base_path}\n\tnos2:\t{self.nos2}\n\tdisp:\t{self.disp}\n'
+    
+    def __repr__(self) -> str:
+      return f'<FAPJob Object {self.name} nos2:{self.nos2} disp:{self.disp}>'
 
     def log_sth(self, log:str) -> None:
       """Writes given string to the log file of the base_path
