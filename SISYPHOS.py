@@ -21,7 +21,7 @@ from PluginTools import PluginTools as PT
 
 debug = bool(OV.GetParam("olex2.debug", False))
 
-instance_path = OV.DataDir()
+#instance_path = OV.DataDir()
 
 try:
   from_outside = False
@@ -108,6 +108,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       try:
         olex.m(f"reap {self.final_ins_path}")
         self.log_sth(f"Was able to load .ins: {self.final_ins_path}")
+        self.log_sth("=========================== Starting New Refinment =======================================")
         olx.AddIns("EXTI")
         olx.AddIns("ACTA")
         if self.resolution > 0:
@@ -124,12 +125,14 @@ class FAPJob:                                   # one FAPjob manages the refinem
         else:
           olex.m("fix disp -c")
         OV.SetParam('snum.NoSpherA2.use_aspherical',False)
-        if OV.GetParam('SISYPHOS.update_weight') == True:
-          OV.SetParam('snum.refinement.update_weight',True)
+        if OV.GetParam('sisyphos.update_weight') == True:
+          OV.SetParam('snum.refinement.update_weight', True)
+          self.log_sth("Refining the weighting scheme")
         else:
-          OV.SetParam('snum.refinement.update_weight',False)
+          OV.SetParam('snum.refinement.update_weight', False)
+          self.log_sth("keeping weighting scheme")
         olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
-        self.log_sth(fr"{self.name}:\t Set refinement engine olex2.refine with G-N\n")
+        self.log_sth("Set refinement engine olex2.refine with G-N")
         if self.growed:
           olex.m("grow")
         for i in range(3):
@@ -143,7 +146,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
             olex.m("delins EXTI")
             self.log_sth(f"Deleted EXTI with exti of: {exti}")
           else:
-            self.log_sth(fr"{self.name}:\t Exti > 0.001, set L-M instead of G-N\n")
+            self.log_sth("Exti > 0.001, set L-M instead of G-N")
             olex.m("spy.set_refinement_program(olex2.refine, Levenberg-Marquardt)")
         olex.m("refine 10")
         if self.nos2:
@@ -302,7 +305,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
           out.write(str(key) + ":" + str(dist_stats[key]) + ",")
         out.write("\nbonderrors:\t")
         for key in dist_stats:
-          out.write(str(key) + ":" + str(dist_errs[key]) + ",")        
+          out.write(str(key) + ":" + str(dist_errs[key]) + ",")
+        out.write("\nWeight:"+str(OV.GetParam('sisyphos.update_weight')))
         out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
