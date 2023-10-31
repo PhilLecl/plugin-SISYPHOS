@@ -77,7 +77,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.final_ins_path = ""                #will be set depending on other params in method setup ins
         self.refine_results = {
           "max_peak" : 0.0,
-          "min_hole" : 0.0,
+          "max_hole" : 0.0,
           "res_rms"  : 0.0,
           "goof"     : 0.0,
           "max_shift_over_esd" : 0.0,
@@ -295,8 +295,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
         for key in stats2:
           out.write(str(key) + ":" + str(stats2[key]) + ",")
         out.write("\nNoSpherA2_Dict:\t")
-        for key in self.nos2_dict:
-          out.write(str(key) + ":" + str(self.nos2_dict[key]) + ",")
+        if self.nos2 == True:
+          for key in self.nos2_dict:
+            out.write(str(key) + ":" + str(self.nos2_dict[key]) + ",")
         out.write("\nrefine_dict:\t")
         for key in self.refine_results:
           out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ",")
@@ -654,8 +655,12 @@ class SISYPHOS(PT):
     for hkl in hkls_paths:
       #nos2_dict_cp = self.nos2_dict.copy()
       if self.perform_disp_ref:
-        joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths,energy_source))
+        joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths, energy_source))
       elif self.benchmark:
+        #Add initial IAM for comparison
+        joblist.append(
+          self.prepare_IAM_job(hkl, elements, hkls_paths, energy_source, {})
+        )
         with open(self.benchmarkfile_path, "r") as bmfp:
           for line in bmfp:
             line.strip(" ")
@@ -663,14 +668,14 @@ class SISYPHOS(PT):
               continue
             keys = line.split(";")
             keys[-1].rstrip("\n")
-            new_job = self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, keys)
+            new_job = self.prepare_benchmarkjob(hkl, elements, hkls_paths, energy_source, keys)
             if new_job.base_path != "":
               joblist.append(new_job)
             else: # This is the case if folder already existed, then we will not append the Job to the list
               print("!!!!Error during preparation of joblist!!!!")
-              print("Skipping job with ", hkl, elements, hkls_paths,energy_source)
+              print("Skipping job with ", hkl, elements, hkls_paths, energy_source)
       else:
-        joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths,energy_source))
+        joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths, energy_source))
     return joblist
 
   def prepare_defaultjob(self, key:str, elements, hkls_paths:dict, energy_source)-> FAPJob:
@@ -734,6 +739,34 @@ class SISYPHOS(PT):
                           disp = self.perform_disp_ref, 
                           elements = elements,
                           nos2 = True,
+                          benchmark = True, 
+                          growed = self.growed,
+                          nos2_dict = nos2_dict_cp.copy()
+                          )  
+                  )
+
+  def prepare_IAM_job(self, key:str, elements:list, hkls_paths:dict, energy_source, keys) -> FAPJob:
+    nos2_dict_cp = self.nos2_dict.copy()
+    new_dir = f"{self.outdir}\{key}_IAM"
+    if os.path.exists(new_dir):
+      return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
+                                                        # I changed this to return an empty Job, to not have a "None" in the job list in 
+                                                        # case the folder already exists, which crashes long benchmarks and is furstrating...
+    os.mkdir(new_dir)
+    shutil.copy(hkls_paths[key], new_dir)
+    shutil.copy(self.solution_path, new_dir)
+    poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
+    if os.path.exists(poss_ins_path):
+      shutil.copy(poss_ins_path, new_dir)
+    return(FAPJob(                                   # create the FAPJob object here
+                          base_path = new_dir, 
+                          solution_name = self.solution_path, 
+                          name = f"{key}_IAM", 
+                          energy_source = energy_source,
+                          resolution = self.resolution,  
+                          disp = self.perform_disp_ref, 
+                          elements = elements,
+                          nos2 = False,
                           benchmark = True, 
                           growed = self.growed,
                           nos2_dict = nos2_dict_cp.copy()
