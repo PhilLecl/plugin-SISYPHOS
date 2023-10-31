@@ -76,10 +76,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.nos2_dict = nos2_dict              #all parameters from nosphera2 settings
         self.final_ins_path = ""                #will be set depending on other params in method setup ins
         self.refine_results = {
-          "max_peak" : 0.0,
-          "max_hole" : 0.0,
-          "res_rms"  : 0.0,
-          "goof"     : 0.0,
+          "max_peak"  : 0.0,
+          "max_hole"  : 0.0,
+          "res_rms"   : 0.0,
+          "goof"      : 0.0,
           "max_shift_over_esd" : 0.0,
           "hooft_str" : 0.0,
           
@@ -222,6 +222,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
       
       dist_stats = {}
       dist_errs = {}
+      R1_all = 0.0
+      R1_gt = 0.0
+      wR2 = 0.0
 
       try:
         # This Block will extract the bondlengths from all bonded atoms
@@ -244,6 +247,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
           norm_eq = fmr.run(build_only=True)
         #and build them
         norm_eq.build_up(False)
+        R1_all = norm_eq.r1_factor()[0]
+        R1_gt = norm_eq.r1_factor(cutoff_factor=2.0)[0]
+        wR2 = norm_eq.wR2()
 
         connectivity_full = fmr.reparametrisation.connectivity_table
         xs = fmr.xray_structure()
@@ -309,6 +315,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         out.write("\nrefine_dict:\t")
         for key in self.refine_results:
           out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ",")
+        out.write("R1_all:" + str(R1_all) + ",R1_gt:" + str(R1_gt) + ",wR2:" + str(wR2))
         out.write("\nbondlengths:\t")
         for key in dist_stats:
           out.write(str(key) + ":" + str(dist_stats[key]) + ",")
@@ -395,7 +402,6 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth("Extended cif extraction failed!")
         pass
       return out
-
 
     def parse_cif2(self,loc):
       self.log_sth(f"Looking for cif information at: {loc}")
@@ -754,7 +760,6 @@ class SISYPHOS(PT):
                   )
 
   def prepare_IAM_job(self, key:str, elements:list, hkls_paths:dict, energy_source, keys) -> FAPJob:
-    nos2_dict_cp = self.nos2_dict.copy()
     new_dir = f"{self.outdir}\{key}_IAM"
     if os.path.exists(new_dir):
       return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
@@ -772,12 +777,12 @@ class SISYPHOS(PT):
                           name = f"{key}_IAM", 
                           energy_source = energy_source,
                           resolution = self.resolution,  
-                          disp = self.perform_disp_ref, 
+                          disp = False, 
                           elements = elements,
                           nos2 = False,
                           benchmark = True, 
                           growed = self.growed,
-                          nos2_dict = nos2_dict_cp.copy()
+                          nos2_dict = {}
                           )  
                   )
 
