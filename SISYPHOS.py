@@ -87,8 +87,13 @@ class FAPJob:                                   # one FAPjob manages the refinem
         if base_path != "":
           self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
           for attr in dir(self):
+            if attr.startswith("__"):
+              continue
             self.log_sth("obj.%s = %r" % (attr, getattr(self, attr)))
           self.log_sth(f"Nosphera2 properties: \t {nos2_dict}")
+
+    def __str__(self) -> str:
+      return f'Job with following options:\n\tname:\t{self.name}\n\tbase_path:\t{self.base_path}\n\tnos2:\t{self.nos2}\n\tdisp:\t{self.disp}\n'
 
     def log_sth(self, log:str) -> None:
       """Writes given string to the log file of the base_path
@@ -108,7 +113,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       try:
         olex.m(f"reap {self.final_ins_path}")
         self.log_sth(f"Was able to load .ins: {self.final_ins_path}")
-        self.log_sth("=========================== Starting New Refinment =======================================")
+        self.log_sth("=========================== Starting New Refinment ===========================")
         olx.AddIns("EXTI")
         olx.AddIns("ACTA")
         if self.resolution > 0:
@@ -155,7 +160,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           self.configure_ORCA()
           olex.m("refine 10")
         counter = 0
-        self.log_sth(f'{abs(OV.GetParam("snum.refinement.max_shift_over_esd"))}')
+        self.log_sth(f'Final Shift: {abs(OV.GetParam("snum.refinement.max_shift_over_esd"))}')
         while abs(OV.GetParam("snum.refinement.max_shift_over_esd")) > 0.005:
           olex.m("refine 20")
           counter += 1
@@ -461,7 +466,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       return elements  
 
     def setupIns(self) -> None:
-      self.log_sth(f"base_path:{self.base_path};energy_source:{self.energy_source};solution_name:{self.solution_name}")
+      self.log_sth(f"\n===========================\nbase_path:{self.base_path}\nenergy_source:{self.energy_source}\nsolution_name:{self.solution_name}\n===========================")
 
       if self.energy_source == "header":
         self.setupInsHeader()
@@ -544,10 +549,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
         return
       self.log_sth("Finished Setup of INS")
       self.refine()
-      self.log_sth("Finished Refinement")
+      self.log_sth("=========================== Finished Refinement ===========================")
       try:
         self.extract_info()
-        self.log_sth("Extracted Information")
+        self.log_sth("=========================== Extracted Information ===========================")
       except:
         print("Faield to extract information")
         self.log_sth("Failed to extract information!")
