@@ -88,7 +88,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
           for attr in dir(self):
             self.log_sth("obj.%s = %r" % (attr, getattr(self, attr)))
-          self.log_sth(f"Nos2 properties: \t {nos2_dict}")
+          self.log_sth(f"Nosphera2 properties: \t {nos2_dict}")
 
     def log_sth(self,log):
       msg = f"{self.name}:\t{log}\n"
