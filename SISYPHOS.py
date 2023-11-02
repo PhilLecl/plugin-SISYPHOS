@@ -467,10 +467,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
 
       self.log_sth(".ins has been setup.")
 
-    def setupInsHeader(self) -> None:
+    def setupInsHeader(self) -> None:     # Function for setting .ins if the energy/wl comes from the header
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
-      with open(self.solution_name, "r") as inp, open(old_ins, "r") as old_inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
+      with open(self.solution_name, "r") as inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
         energy = self.name.split("_")[-1].split(".")[0]
         try:
           wl = ret_wl(float(energy))
@@ -485,10 +485,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.correct_ins()      
       self.final_ins_path = f"{self.base_path}/{self.name}.ins"
 
-    def setupInsIns(self) -> None:
+    def setupInsIns(self) -> None:      # Function for setting .ins if the energy/wl comes from the .ins
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
-
       with open(self.solution_name, "r") as inp, open(old_ins, "r") as old_inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
         cell = ""
         for line in old_inp:
@@ -629,7 +628,7 @@ class SISYPHOS(PT):
 
         # Iterate through all files in the current directory
         for file in files:
-            if "FAPoutput" in root:
+            if "SISYoutput" in root:
               continue
             elif os.path.join("olex2", "temp") in root or os.path.join("olex2", "Wfn_job") in root:
               continue
@@ -816,9 +815,9 @@ class SISYPHOS(PT):
 
   def prepare_outdir(self) -> None:
     i = 1                                                   # add a new outputfolder
-    while os.path.exists(f"{self.base_path}/FAPoutput"+str(i)):
+    while os.path.exists(f"{self.base_path}/SISYoutput"+str(i)):
       i += 1
-    self.outdir = f"{self.base_path}\\FAPoutput"+str(i)
+    self.outdir = f"{self.base_path}\\SISYoutput"+str(i)
     os.mkdir(self.outdir)
     self.output_base_path = self.outdir  
 
@@ -856,24 +855,30 @@ class SISYPHOS(PT):
     print(self.nos2_dict)
 
   def print_formula(self) -> None:   #This one does the actual work
-    self.set_up_params()
-    joblist = self.prepare()
+    if self.solution_path == "" or self.base_path == "":
+      print("\nPlease set up your data directory and solution first!")
+    else:
+      if self.benchmark == True and self.benchmarkfile_path == "":
+        print("\nPlease provide a benchmark file!")
+      else:
+        self.set_up_params()
+        joblist = self.prepare()
 
-    print(f"Initial Joblist: {joblist}")
-    print(f"Wrote results to {self.outdir}")
-    print(f"NospherA2 dict: {self.nos2_dict}")
+        print(f"Initial Joblist: {joblist}")
+        print(f"Wrote results to {self.outdir}")
+        print(f"NospherA2 dict: {self.nos2_dict}")
 
-    with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
-        main_out.write(f"Joblist: \t{joblist}")
+        with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
+            main_out.write(f"Joblist: \t{joblist}")
 
-    for job in joblist:
-      try:
-        job.run()
-      except NameError as error:
-        print(f"ERROR! \nDidnt (fully) run {job.name}!\nSee log for additional info.")
-        print(error)
-    print(joblist)
-    print(f"SISYPHOS run finished, results and log in {self.base_path}")
+        for job in joblist:
+          try:
+            job.run()
+          except NameError as error:
+            print(f"ERROR! \nDidnt (fully) run {job.name}!\nSee log for additional info.")
+            print(error)
+        print(joblist)
+        print(f"SISYPHOS run finished, results and log in {self.base_path}")
 
   def evaluate(self) -> None:
     hkl_stats = ["Name","TotalReflections", "UniqueReflections", "FriedelOppositesMerged", "InconsistentEquivalents", "SystematicAbsencesRemoved", "MinD", \
