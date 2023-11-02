@@ -1,6 +1,6 @@
 from asyncio.constants import LOG_THRESHOLD_FOR_CONNLOST_WRITES
 #from email.mime import base
-from unicodedata import name
+#from unicodedata import name
 from olexFunctions import OlexFunctions
 OV = OlexFunctions()
 import os
@@ -21,7 +21,7 @@ from PluginTools import PluginTools as PT
 
 debug = bool(OV.GetParam("olex2.debug", False))
 
-instance_path = OV.DataDir()
+#instance_path = OV.DataDir()
 
 try:
   from_outside = False
@@ -76,10 +76,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.nos2_dict = nos2_dict              #all parameters from nosphera2 settings
         self.final_ins_path = ""                #will be set depending on other params in method setup ins
         self.refine_results = {
-          "max_peak" : 0.0,
-          "min_hole" : 0.0,
-          "res_rms"  : 0.0,
-          "goof"     : 0.0,
+          "max_peak"  : 0.0,
+          "max_hole"  : 0.0,
+          "res_rms"   : 0.0,
+          "goof"      : 0.0,
           "max_shift_over_esd" : 0.0,
           "hooft_str" : 0.0,
           
@@ -87,8 +87,16 @@ class FAPJob:                                   # one FAPjob manages the refinem
         if base_path != "":
           self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
           for attr in dir(self):
+            if attr.startswith("__"):
+              continue
             self.log_sth("obj.%s = %r" % (attr, getattr(self, attr)))
           self.log_sth(f"Nosphera2 properties: \t {nos2_dict}")
+
+    def __str__(self) -> str:
+      return f'Job with following options:\n\tname:\t{self.name}\n\tbase_path:\t{self.base_path}\n\tnos2:\t{self.nos2}\n\tdisp:\t{self.disp}\n'
+    
+    def __repr__(self) -> str:
+      return f'<FAPJob Object {self.name} nos2:{self.nos2} disp:{self.disp}>'
 
     def log_sth(self, log:str) -> None:
       """Writes given string to the log file of the base_path
@@ -108,6 +116,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       try:
         olex.m(f"reap {self.final_ins_path}")
         self.log_sth(f"Was able to load .ins: {self.final_ins_path}")
+        self.log_sth("=========================== Starting New Refinment ===========================")
         olx.AddIns("EXTI")
         olx.AddIns("ACTA")
         if self.resolution > 0:
@@ -124,12 +133,14 @@ class FAPJob:                                   # one FAPjob manages the refinem
         else:
           olex.m("fix disp -c")
         OV.SetParam('snum.NoSpherA2.use_aspherical',False)
-        if OV.GetParam('SISYPHOS.update_weight') == True:
-          OV.SetParam('snum.refinement.update_weight',True)
+        if OV.GetParam('sisyphos.update_weight') == True:
+          OV.SetParam('snum.refinement.update_weight', True)
+          self.log_sth("Refining the weighting scheme")
         else:
-          OV.SetParam('snum.refinement.update_weight',False)
+          OV.SetParam('snum.refinement.update_weight', False)
+          self.log_sth("keeping weighting scheme")
         olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
-        self.log_sth(fr"{self.name}:\t Set refinement engine olex2.refine with G-N\n")
+        self.log_sth("Set refinement engine olex2.refine with G-N")
         if self.growed:
           olex.m("grow")
         for i in range(3):
@@ -143,7 +154,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
             olex.m("delins EXTI")
             self.log_sth(f"Deleted EXTI with exti of: {exti}")
           else:
-            self.log_sth(fr"{self.name}:\t Exti > 0.001, set L-M instead of G-N\n")
+            self.log_sth("Exti > 0.001, set L-M instead of G-N")
             olex.m("spy.set_refinement_program(olex2.refine, Levenberg-Marquardt)")
         olex.m("refine 10")
         if self.nos2:
@@ -152,7 +163,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           self.configure_ORCA()
           olex.m("refine 10")
         counter = 0
-        self.log_sth(f'{abs(OV.GetParam("snum.refinement.max_shift_over_esd"))}')
+        self.log_sth(f'Final Shift: {abs(OV.GetParam("snum.refinement.max_shift_over_esd"))}')
         while abs(OV.GetParam("snum.refinement.max_shift_over_esd")) > 0.005:
           olex.m("refine 20")
           counter += 1
@@ -211,6 +222,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
       
       dist_stats = {}
       dist_errs = {}
+      R1_all = 0.0
+      R1_gt = 0.0
+      wR2 = 0.0
 
       try:
         # This Block will extract the bondlengths from all bonded atoms
@@ -233,6 +247,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
           norm_eq = fmr.run(build_only=True)
         #and build them
         norm_eq.build_up(False)
+        R1_all = norm_eq.r1_factor()[0]
+        R1_gt = norm_eq.r1_factor(cutoff_factor=2.0)[0]
+        wR2 = norm_eq.wR2()
 
         connectivity_full = fmr.reparametrisation.connectivity_table
         xs = fmr.xray_structure()
@@ -292,17 +309,20 @@ class FAPJob:                                   # one FAPjob manages the refinem
         for key in stats2:
           out.write(str(key) + ":" + str(stats2[key]) + ",")
         out.write("\nNoSpherA2_Dict:\t")
-        for key in self.nos2_dict:
-          out.write(str(key) + ":" + str(self.nos2_dict[key]) + ",")
+        if self.nos2 == True:
+          for key in self.nos2_dict:
+            out.write(str(key) + ":" + str(self.nos2_dict[key]) + ",")
         out.write("\nrefine_dict:\t")
         for key in self.refine_results:
           out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ",")
+        out.write("R1_all:" + str(R1_all) + ",R1_gt:" + str(R1_gt) + ",wR2:" + str(wR2))
         out.write("\nbondlengths:\t")
         for key in dist_stats:
           out.write(str(key) + ":" + str(dist_stats[key]) + ",")
         out.write("\nbonderrors:\t")
         for key in dist_stats:
-          out.write(str(key) + ":" + str(dist_errs[key]) + ",")        
+          out.write(str(key) + ":" + str(dist_errs[key]) + ",")
+        out.write("\nWeight:"+str(OV.GetParam('sisyphos.update_weight')))
         out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
@@ -383,7 +403,6 @@ class FAPJob:                                   # one FAPjob manages the refinem
         pass
       return out
 
-
     def parse_cif2(self,loc):
       self.log_sth(f"Looking for cif information at: {loc}")
       dat_names = ["mu", 
@@ -456,7 +475,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       return elements  
 
     def setupIns(self) -> None:
-      self.log_sth(f"base_path:{self.base_path};energy_source:{self.energy_source};solution_name:{self.solution_name}")
+      self.log_sth(f"\n===========================\nbase_path:{self.base_path}\nenergy_source:{self.energy_source}\nsolution_name:{self.solution_name}\n===========================")
 
       if self.energy_source == "header":
         self.setupInsHeader()
@@ -538,10 +557,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
         return
       self.log_sth("Finished Setup of INS")
       self.refine()
-      self.log_sth("Finished Refinement")
+      self.log_sth("=========================== Finished Refinement ===========================")
       try:
         self.extract_info()
-        self.log_sth("Extracted Information")
+        self.log_sth("=========================== Extracted Information ===========================")
       except:
         print("Faield to extract information")
         self.log_sth("Failed to extract information!")
@@ -649,8 +668,12 @@ class SISYPHOS(PT):
     for hkl in hkls_paths:
       #nos2_dict_cp = self.nos2_dict.copy()
       if self.perform_disp_ref:
-        joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths,energy_source))
+        joblist.append(self.prepare_dispjob(hkl, elements, hkls_paths, energy_source))
       elif self.benchmark:
+        #Add initial IAM for comparison
+        joblist.append(
+          self.prepare_IAM_job(hkl, elements, hkls_paths, energy_source, {})
+        )
         with open(self.benchmarkfile_path, "r") as bmfp:
           for line in bmfp:
             line.strip(" ")
@@ -658,14 +681,14 @@ class SISYPHOS(PT):
               continue
             keys = line.split(";")
             keys[-1].rstrip("\n")
-            new_job = self.prepare_benchmarkjob(hkl, elements, hkls_paths,energy_source, keys)
+            new_job = self.prepare_benchmarkjob(hkl, elements, hkls_paths, energy_source, keys)
             if new_job.base_path != "":
               joblist.append(new_job)
             else: # This is the case if folder already existed, then we will not append the Job to the list
               print("!!!!Error during preparation of joblist!!!!")
-              print("Skipping job with ", hkl, elements, hkls_paths,energy_source)
+              print("Skipping job with ", hkl, elements, hkls_paths, energy_source)
       else:
-        joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths,energy_source))
+        joblist.append(self.prepare_defaultjob(hkl, elements, hkls_paths, energy_source))
     return joblist
 
   def prepare_defaultjob(self, key:str, elements, hkls_paths:dict, energy_source)-> FAPJob:
@@ -732,6 +755,33 @@ class SISYPHOS(PT):
                           benchmark = True, 
                           growed = self.growed,
                           nos2_dict = nos2_dict_cp.copy()
+                          )  
+                  )
+
+  def prepare_IAM_job(self, key:str, elements:list, hkls_paths:dict, energy_source, keys) -> FAPJob:
+    new_dir = f"{self.outdir}\{key}_IAM"
+    if os.path.exists(new_dir):
+      return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
+                                                        # I changed this to return an empty Job, to not have a "None" in the job list in 
+                                                        # case the folder already exists, which crashes long benchmarks and is furstrating...
+    os.mkdir(new_dir)
+    shutil.copy(hkls_paths[key], new_dir)
+    shutil.copy(self.solution_path, new_dir)
+    poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
+    if os.path.exists(poss_ins_path):
+      shutil.copy(poss_ins_path, new_dir)
+    return(FAPJob(                                   # create the FAPJob object here
+                          base_path = new_dir, 
+                          solution_name = self.solution_path, 
+                          name = f"{key}_IAM", 
+                          energy_source = energy_source,
+                          resolution = self.resolution,  
+                          disp = False, 
+                          elements = elements,
+                          nos2 = False,
+                          benchmark = True, 
+                          growed = self.growed,
+                          nos2_dict = {}
                           )  
                   )
 

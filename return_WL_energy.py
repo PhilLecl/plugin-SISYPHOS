@@ -3,7 +3,7 @@
 from scipy import constants as conts
 
 def ret_energy(wavelength):
-    return (conts.h * conts.c) / (wavelength*1.60218e-19) * 1E10
+    return (conts.h * conts.c) / (wavelength*conts.e) / conts.angstrom
 
 def ret_wl(energy):
-    return (conts.h * conts.c) / (energy*1.60218e-19) * 1E10
+    return (conts.h * conts.c) / (energy*conts.e) / conts.angstrom
