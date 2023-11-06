@@ -733,6 +733,11 @@ class SISYPHOS(PT):
     fun_temp =  nos2_dict_cp["method"]
     new_dir = f"{self.outdir}\{key}_{fun_temp}_{meth_temp}"
     if os.path.exists(new_dir):
+      i = 1
+      while os.path.exists(new_dir+f"_{i}"):
+        i += 1
+      new_dir += f'_{i}'
+    if os.path.exists(new_dir):
       return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
                                                         # I changed this to return an empty Job, to not have a "None" in the job list in 
                                                         # case the folder already exists, which crashes long benchmarks and is furstrating...
