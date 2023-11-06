@@ -40,6 +40,32 @@ This setting is only for synchrotron users who know an offset between the enery 
 Here you can apply a general cutoff in d-spacing for all of your datasets.
 
 
+# Modes
+## Use NoSpherA2
+
+Decide if you want to use NoSpherA2 to perform a non-spherical atomic formfactor calculation. Further details see NoSpherA2 (* Kleemiss et al., Chem. Sci., 2021, 12, 1675
+&nbsp; URL[https://pubs.rsc.org/en/content/articlehtml/2021/sc/d0sc05526c,PAPER] ).
+
+## Benchmark mode
+
+This mode is can be used to test e.g. the optimal settings for HAR for your structure. You have to prepare a benchmarkfile, which contains the settings for NoSpherA2 using the ORCA5 quantum chemical software. Each line in the benchmark file will create a new model, with the calculation taking semi-colon seperated keywords (keyword:setting;next_keyword:nextsetting) for the calculation. Optional keywords are: "basis_name","method", 
+                  "ncpus", "mem", "charge", 
+                  "multiplicity", "full_HAR",
+                  "Max_HAR_Cycles","becke_accuracy",
+                  "Relativistic", "h_aniso", 
+                  "h_afix", "add_disp", 
+                  "cluster_radius", "DIIS",
+                  "cluster_grow", "ORCA_SCF_Conv",
+                  "ORCA_SCF_Strategy", "ORCA_Solvation",
+                  and "pySCF_Damping".
+
+## DISP refinement
+Decide if you want to refine anomalous dispersion parameters for a present element / position. Further details see DISP Refinement (* Meurer et al., IUCrJ, 2022, 9 
+&nbsp; URL[https://journals.iucr.org/m/issues/2022/05/00/lt5050/,PAPER]).
+
+## Update weight
+This is a switch to automatically update the weights used. 
+
 # Elements
 Decide which Elements the Anomalous Dispersion values should be refined for.
 
@@ -47,3 +73,6 @@ Decide which Elements the Anomalous Dispersion values should be refined for.
 # disp
 If you have more than one position for one of the Elements given, you can choose if they should have the same DISP value (constrained) or an individual one for each site.
 
+# Energy and wavelength sources
+
+Here you can set up, where SISYPHOS will search for alternative wavelengths for your experiments. You can choose the file header with format NAME_ENERGY or if you already have an .ins file containing this information (has to have same name as the data block) you can also use this instead.

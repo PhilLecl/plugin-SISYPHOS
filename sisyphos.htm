@@ -71,7 +71,7 @@
 
 #ignoreif -->
 <!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
-<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=SISYPHOS_2;help_ext=Path;1 -->
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=SISYPHOS_2;help_ext=Adjustment;1 -->
 <td width='23%'>
     <b>%Adjustment / eV%:</b>
 </td>
@@ -86,7 +86,7 @@
 </td>
 <!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
 
-<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=SISYPHOS_2;help_ext=Path;1 -->
+<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=SISYPHOS_2;help_ext=Resolution;1 -->
 <td width='23%'>
     <b>%Resolution / Angstroms%:</b>
 </td>
@@ -101,7 +101,12 @@
 </td>
 <!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
 
-<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=Modes; help_ext=Modes;1; -->
+<td ALIGN='left' width='21%'>
+  <b>Mode options</b>
+  <br>
+</td>
+
 <td width='2%' align="left">
   $+
     html.Snippet("gui/snippets/input-checkbox-td",
@@ -129,18 +134,6 @@
 <td width='2%' align="left">
   $+
     html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Update Weight",
-    "label=Update Weight",
-    "checked=spy.GetParam('sisyphos.update_weight')",
-    "oncheck=spy.SetParam('sisyphos.update_weight','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.update_weight','False')>>html.Update()"
-    )
-  $-
-</td>
-<td width='2%' align="left">
-  $+
-    html.Snippet("gui/snippets/input-checkbox-td",
     "name=DISP Refinement",
     "label=DISP Refinement",
     "checked=spy.GetParam('sisyphos.perform_disp_ref')",
@@ -150,6 +143,19 @@
     )
   $-
 </td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Update Weight",
+    "label=Update Weight",
+    "checked=spy.GetParam('sisyphos.update_weight')",
+    "oncheck=spy.SetParam('sisyphos.update_weight','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('sisyphos.update_weight','False')>>html.Update()"
+    )
+  $-
+</td>
+
 <!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
 
 <!-- #ignoreif not spy.GetParam('sisyphos.use_nos2')
@@ -211,7 +217,7 @@
 #ignoreif -->
 
 
-<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
+<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=Energy_and_wavelength_sources;1; -->
 <td width='2%' align="center">
   $+
     html.Snippet("gui/snippets/input-checkbox-td",

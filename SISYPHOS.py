@@ -483,10 +483,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.setupInsIns()
       else:
         self.setupInsDefault()
-
       self.log_sth(".ins has been setup.")
 
-    def setupInsHeader(self) -> None:     # Function for setting .ins if the energy/wl comes from the header
+    def setupInsHeader(self) -> None:     # Function for setting .ins if the energy/wl comes from the header   
       old_ins = f"{self.base_path}/{self.name}_old.ins"
       os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
       with open(self.solution_name, "r") as inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
