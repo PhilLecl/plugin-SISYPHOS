@@ -623,7 +623,7 @@ class SISYPHOS(PT):
       #buffer = out.split("\\")
       #buffer = buffer[:-1]
       self.base_path = out
-      print(f"Your data lies at:\n{out)}")
+      print(f"Your data lies at:\n{out}")
 
   def setSolutionPath(self) -> None:
     out = olex.f('fileOpen("Choose Your solution .ins file", "*.ins", filepath())')
