@@ -620,10 +620,10 @@ class SISYPHOS(PT):
     if out == "":
       print(" ")
     else:
-      buffer = out.split("\\")
-      buffer = buffer[:-1]
-      self.base_path = "\\".join(buffer)
-      print(f"Your data lies at:\n{'/'.join(buffer)}")
+      #buffer = out.split("\\")
+      #buffer = buffer[:-1]
+      self.base_path = out
+      print(f"Your data lies at:\n{out)}")
 
   def setSolutionPath(self) -> None:
     out = olex.f('fileOpen("Choose Your solution .ins file", "*.ins", filepath())')
