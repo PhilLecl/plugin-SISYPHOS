@@ -792,9 +792,7 @@ class SISYPHOS(PT):
   def prepare_dispjob(self, key, elements, hkls_paths,energy_source) -> FAPJob:
     nos2_dict_cp = self.nos2_dict.copy()
     disp_sources = ["refined"]
-    indiv_disps = False
-    if self.indiv_disp:
-      indiv_disps = True          
+    indiv_disps = False         
     if self.henke:
       disp_sources.append("henke")
     if self.sasaki:
@@ -802,7 +800,7 @@ class SISYPHOS(PT):
     if self.brennan:
       disp_sources.append("brennan")
     for disp_source in disp_sources:  
-      if self.benchmark:                              #also check if a benchmark regarding functionals/methods should be performed
+      if self.benchmark:                              #also check if a benchmark should be performed
         with open(self.benchmarkfile_path, "r") as bmfp:
           for line in bmfp:
             fun, meth = line.split(",")
@@ -917,7 +915,6 @@ class SISYPHOS(PT):
       else:
         self.set_up_params()
         joblist = self.prepare()
-
         print(f"Initial Joblist: {joblist}")
         print(f"Wrote results to {self.outdir}")
         print(f"NospherA2 dict: {self.nos2_dict}")
