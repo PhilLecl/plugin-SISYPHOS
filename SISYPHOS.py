@@ -188,7 +188,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.log_sth(f"Extracted hkl stats: {stats}")
 
       try:
-        locat = f"{self.base_path}\{self.name}.cif"
+        locat = os.path.join(self.base_path,f"{self.name}.cif"
         print(locat)
         stats2 = self.parse_cif(locat)
         self.log_sth(f"Extracted cif stats: {stats2} from {locat}")
@@ -667,7 +667,7 @@ class SISYPHOS(PT):
 
   def prepare_defaultjob(self, key:str, elements, hkls_paths:dict, energy_source)-> FAPJob:
     nos2_dict_cp = self.nos2_dict.copy()
-    new_dir = f"{self.outdir}\{key}" 
+    new_dir = os.path.join(self.outdir,key)
     if os.path.exists(new_dir):
       i = 1
       while os.path.exists(new_dir):
@@ -706,7 +706,7 @@ class SISYPHOS(PT):
     print(nos2_dict_cp)
     meth_temp =  nos2_dict_cp["basis_name"].replace('(', '').replace(')', '')
     fun_temp =  nos2_dict_cp["method"]
-    new_dir = f"{self.outdir}\{key}_{fun_temp}_{meth_temp}"
+    new_dir = os.path.join(self.outdir,f"{key}_{fun_temp}_{meth_temp}"
     if os.path.exists(new_dir):
       i = 1
       while os.path.exists(new_dir+f"_{i}"):
