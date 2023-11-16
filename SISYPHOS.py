@@ -581,10 +581,14 @@ class SISYPHOS(PT):
     OV.registerFunction(self.setSolutionPath,True,"SISYPHOS")
     OV.registerFunction(self.setBenchmarkFile,True,"SISYPHOS")
 
-  def setBenchmarkFile(self) -> None:
-    out = olex.f('fileOpen("Please choose a text benchmark file", "*", filepath())')
-    self.benchmarkfile_path = out
-    print(f"Benchmarkfile loaded froms:\n{out}")
+  def setBenchmarkFile(self, g_path = None) -> None:
+    if g_path == None:
+      out = olex.f('fileOpen("Please choose a text benchmark file", "*", filepath())')
+      self.benchmarkfile_path = out
+      print(f"Benchmarkfile loaded froms:\n{out}")
+    else:
+      self.benchmarkfile_path = g_path
+      print(f"Benchmarkfile loaded froms:\n{g_path}")
 
   def chooseDir(self) -> str:
     return olex.f('choosedir("Choose your data folder")')
