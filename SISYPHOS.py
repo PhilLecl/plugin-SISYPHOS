@@ -602,8 +602,8 @@ class SISYPHOS(PT):
         self.base_path = out
         print(f"Your data lies at:\n{out}")
     else:
-      self.base_path = path
-      print(f"Your data lies at:\n{path}")
+      self.base_path = g_path
+      print(f"Your data lies at:\n{g_path}")
 
   def setSolutionPath(self, g_path = None) -> None:
     if g_path == None:
@@ -612,9 +612,9 @@ class SISYPHOS(PT):
       self.solution_path = out
       print(f"Your solution lies at:\n{out} with name {self.ins_name}")
     else:
-      self.solution_path = path
-      self.ins_name = os.path.basename(path)
-      print(f"Your solution lies at:\n{path} with name {self.ins_name}")
+      self.solution_path = g_path
+      self.ins_name = os.path.basename(g_path)
+      print(f"Your solution lies at:\n{g_path} with name {self.ins_name}")
 
   def prepare(self) -> list:  #new version 30.05.2023
     hkls_paths = {}
