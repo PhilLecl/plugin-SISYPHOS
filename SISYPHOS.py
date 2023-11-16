@@ -1,27 +1,17 @@
 from asyncio.constants import LOG_THRESHOLD_FOR_CONNLOST_WRITES
-#from email.mime import base
-#from unicodedata import name
 from olexFunctions import OlexFunctions
 OV = OlexFunctions()
 import os
-#import htmlTools
 import olex_core
 import olex
 import olx
 import math
-#import gui
 import re
 import shutil
-#import sys
 from return_WL_energy import ret_wl
-#from time import sleep
-#import time
 from PluginTools import PluginTools as PT
-#import pandas as pd
 
 debug = bool(OV.GetParam("olex2.debug", False))
-
-#instance_path = OV.DataDir()
 
 try:
   from_outside = False
@@ -46,51 +36,41 @@ p_scope = d['p_scope']
 OV.SetVar('SISYPHOS_plugin_path', p_path)
 
 class FAPJob:                                   # one FAPjob manages the refinement, logging and output of one data set of the same structure as all other jobs
-    def __init__(self, 
-                base_path = "",
-                solution_name = "", 
-                name = "", 
-                resolution= "",  
-                energy_source = "",
-                nos2_dict = {},
-                indiv_disps = False,
-                disp = False, 
-                disp_source = "", 
-                elements = [],
-                nos2 = False, 
-                growed = False,
-                benchmark = False
-                ):
-        self.base_path = base_path              #variable for the path to the solution .ins file for this structure
-        self.solution_name = solution_name      #name of the copied ins for the structure solution
-        self.name = name                        #base name
-        self.energy_source = energy_source      #where does energy comes from? is used in setup ins to generate final ins thats being used
-        self.resolution = resolution            #resolution limit in format SHEL 99 self.resolution
-        self.growed = growed                    #does the molecule need to be grown?
-        self.disp = disp                        #bool if the job is a dispersion refinement job or not
-        self.disp_source = disp_source          #list of dispersion source alternatives, possible are sasaki, henke, brennan, refined
-        self.indiv_disps = indiv_disps
-        self.elements = elements                #lists for elements that should get refined for dispersion
-        self.nos2 = nos2                        #decide whether NoS2 is being used
-        self.benchmark = benchmark
-        self.nos2_dict = nos2_dict              #all parameters from nosphera2 settings
-        self.final_ins_path = ""                #will be set depending on other params in method setup ins
-        self.refine_results = {
-          "max_peak"  : 0.0,
-          "max_hole"  : 0.0,
-          "res_rms"   : 0.0,
-          "goof"      : 0.0,
-          "max_shift_over_esd" : 0.0,
-          "hooft_str" : 0.0,
-          
-        }
-        if base_path != "":
-          self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
-          for attr in dir(self):
-            if attr.startswith("__"):
-              continue
-            self.log_sth("obj.%s = %r" % (attr, getattr(self, attr)))
-          self.log_sth(f"Nosphera2 properties: \t {nos2_dict}")
+    def __init__(self, base_path = "", solution_name = "", name = "", resolution= "", energy_source = "", nos2_dict=None, indiv_disps = False, disp = False, disp_source = "", elements=None, nos2 = False, growed = False, benchmark = False):
+      if nos2_dict is None:
+        nos2_dict = {}
+      if elements is None:
+        elements = []
+      self.base_path = base_path              #variable for the path to the solution .ins file for this structure
+      self.solution_name = solution_name      #name of the copied ins for the structure solution
+      self.name = name                        #base name
+      self.energy_source = energy_source      #where does energy comes from? is used in setup ins to generate final ins thats being used
+      self.resolution = resolution            #resolution limit in format SHEL 99 self.resolution
+      self.growed = growed                    #does the molecule need to be grown?
+      self.disp = disp                        #bool if the job is a dispersion refinement job or not
+      self.disp_source = disp_source          #list of dispersion source alternatives, possible are sasaki, henke, brennan, refined
+      self.indiv_disps = indiv_disps
+      self.elements = elements                #lists for elements that should get refined for dispersion
+      self.nos2 = nos2                        #decide whether NoS2 is being used
+      self.benchmark = benchmark
+      self.nos2_dict = nos2_dict              #all parameters from nosphera2 settings
+      self.final_ins_path = ""                #will be set depending on other params in method setup ins
+      self.refine_results = {
+        "max_peak"  : 0.0,
+        "max_hole"  : 0.0,
+        "res_rms"   : 0.0,
+        "goof"      : 0.0,
+        "max_shift_over_esd" : 0.0,
+        "hooft_str" : 0.0,
+
+      }
+      if base_path != "":
+        self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
+        for attr in dir(self):
+          if attr.startswith("__"):
+            continue
+          self.log_sth("obj.%s = %r" % (attr, getattr(self, attr)))
+        self.log_sth(f"Nosphera2 properties: \t {nos2_dict}")
 
     def __str__(self) -> str:
       return f'Job with following options:\n\tname:\t{self.name}\n\tbase_path:\t{self.base_path}\n\tnos2:\t{self.nos2}\n\tdisp:\t{self.disp}\n'
@@ -105,9 +85,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
           log (str): String to be written in the log
       """
       msg = f"{self.name}:\t{log}\n"
-      with open(f"{self.base_path}/log.dat", "a") as out:
+      with open(os.path.join(self.base_path,"log.dat"), "a") as out:
         out.write(msg)
-      with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
+      with open(os.path.join(self.base_path,"log.txt"), "a") as main_out:
         main_out.write(msg)
 
     def refine(self) -> None:
@@ -122,7 +102,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         if self.resolution > 0:
           olex.m(f"SHEL 99 {self.resolution}")
         if self.disp:
-          if not self.disp_source == "refined":
+          if self.disp_source != "refined":
             olex.m(f"gendisp -force -source={self.disp_source}")
             self.log_sth(fr"{self.name}:\t Forced gendisp command with {self.disp_source} as dispersion source!\n")
           if self.disp_source == "refined":
@@ -143,13 +123,11 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth("Set refinement engine olex2.refine with G-N")
         if self.growed:
           olex.m("grow")
-        for i in range(3):
+        for _ in range(3):
           olex.m("refine 5")
         exti = olx.xf.rm.Exti()
         self.log_sth(f"Found Extinction: {exti}")
-        if exti == "n/a":
-          pass
-        else:
+        if exti != "n/a":
           if float(exti.split("(")[0]) < 0.001:
             olex.m("delins EXTI")
             self.log_sth(f"Deleted EXTI with exti of: {exti}")
@@ -486,9 +464,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.log_sth(".ins has been setup.")
 
     def setupInsHeader(self) -> None:     # Function for setting .ins if the energy/wl comes from the header   
-      old_ins = f"{self.base_path}/{self.name}_old.ins"
-      os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
-      with open(self.solution_name, "r") as inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
+      old_ins = os.path.join(self.base_path,self.name+"_old.ins")
+      os.rename(os.path.join(self.base_path,self.name+".ins"),old_ins)
+      with open(self.solution_name, "r") as inp, open(os.path.join(self.base_path,self.name+".ins"), "w") as out:
         energy = self.name.split("_")[-1].split(".")[0]
         try:
           wl = ret_wl(float(energy))
@@ -501,12 +479,12 @@ class FAPJob:                                   # one FAPjob manages the refinem
             line = " ".join(buffer)
           out.write(line)
       self.correct_ins()      
-      self.final_ins_path = f"{self.base_path}/{self.name}.ins"
+      self.final_ins_path = os.path.join(self.base_path,self.name+".ins")
 
     def setupInsIns(self) -> None:      # Function for setting .ins if the energy/wl comes from the .ins
-      old_ins = f"{self.base_path}/{self.name}_old.ins"
-      os.rename(f"{self.base_path}/{self.name}.ins",old_ins)
-      with open(self.solution_name, "r") as inp, open(old_ins, "r") as old_inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
+      old_ins = os.path.join(self.base_path,self.name+"_old.ins")
+      os.rename(os.path.join(self.base_path,self.name+".ins"),old_ins)
+      with open(self.solution_name, "r") as inp, open(old_ins, "r") as old_inp, open(os.path.join(self.base_path,self.name+".ins"), "w") as out:
         cell = ""
         for line in old_inp:
           if "CELL" in line:
@@ -516,14 +494,14 @@ class FAPJob:                                   # one FAPjob manages the refinem
             line = cell
           out.write(line)      
       self.correct_ins()      
-      self.final_ins_path = f"{self.base_path}/{self.name}.ins" 
+      self.final_ins_path = os.path.join(self.base_path,self.name+".ins")
 
     def setupInsDefault(self) -> None:
-      with open(self.solution_name, "r") as inp, open(f"{self.base_path}/{self.name}.ins", "w") as out:
+      with open(self.solution_name, "r") as inp, open(os.path.join(self.base_path,self.name+".ins"), "w") as out:
         for line in inp:
           out.write(line)
       self.correct_ins()
-      self.final_ins_path = f"{self.base_path}/{self.name}.ins"
+      self.final_ins_path = os.path.join(self.base_path,self.name+".ins")
 
     def correct_ins(self) -> None:
       if self.disp and self.disp_source != "refined":
@@ -620,17 +598,14 @@ class SISYPHOS(PT):
     if out == "":
       print(" ")
     else:
-      #buffer = out.split("\\")
-      #buffer = buffer[:-1]
       self.base_path = out
       print(f"Your data lies at:\n{out}")
 
   def setSolutionPath(self) -> None:
     out = olex.f('fileOpen("Choose Your solution .ins file", "*.ins", filepath())')
-    buffer = out.split("\\")
-    self.ins_name = buffer[-1]
-    self.solution_path = "\\".join(buffer)
-    print(f"Your solution lies at:\n{'/'.join(buffer)} with name {self.ins_name}")
+    self.ins_name = os.path.basename(out)
+    self.solution_path = out
+    print(f"Your solution lies at:\n{out} with name {self.ins_name}")
 
   def prepare(self) -> list:  #new version 30.05.2023
     hkls_paths = {}
@@ -726,7 +701,7 @@ class SISYPHOS(PT):
         k, m = keyy.split(":")
         nos2_dict_cp[k.strip(" ")] = m.strip(" ").strip("\n")
     except:
-      with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
+      with open(os.path.join(os.path.dirname(self.base_path),"log.txt"),"a") as main_out:
         main_out.write(f"Failed to read instructions for {keys} in benchmarkfile")
     print(nos2_dict_cp)
     meth_temp =  nos2_dict_cp["basis_name"].replace('(', '').replace(')', '')
@@ -763,7 +738,7 @@ class SISYPHOS(PT):
                   )
 
   def prepare_IAM_job(self, key:str, elements:list, hkls_paths:dict, energy_source, keys) -> FAPJob:
-    new_dir = f"{self.outdir}\{key}_IAM"
+    new_dir = os.path.join(self.outdir,f"{key}_IAM")
     if os.path.exists(new_dir):
       return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
                                                         # I changed this to return an empty Job, to not have a "None" in the job list in 
@@ -806,7 +781,7 @@ class SISYPHOS(PT):
             fun, meth = line.split(",")
             meth = meth.rstrip("\n")
             meth_temp =  meth.replace('(', '').replace(')', '')
-            new_dir = f"{self.outdir}\{key}_{disp_source}_{fun}_{meth_temp}"
+            new_dir = os.path.join(self.outdir,f"{key}_{disp_source}_{fun}_{meth_temp}")
             nos2_dict_cp["basis_name"] = meth
             nos2_dict_cp["method"] = fun
             if os.path.exists(new_dir):
@@ -836,7 +811,7 @@ class SISYPHOS(PT):
                                   )  
                           )
       else:
-        new_dir = f"{self.outdir}\{key}_{disp_source}"
+        new_dir = os.path.join(self.outdir,f"{key}_{disp_source}")
         if os.path.exists(new_dir):
           i = 1
           while os.path.exists(new_dir):
@@ -867,9 +842,9 @@ class SISYPHOS(PT):
 
   def prepare_outdir(self) -> None:
     i = 1                                                   # add a new outputfolder
-    while os.path.exists(f"{self.base_path}/SISYoutput"+str(i)):
+    while os.path.exists(os.path.join(self.base_path, "SISYoutput"+str(i))):
       i += 1
-    self.outdir = f"{self.base_path}\\SISYoutput"+str(i)
+    self.outdir = os.path.join(self.base_path, "SISYoutput"+str(i))
     os.mkdir(self.outdir)
     self.output_base_path = self.outdir  
 
@@ -939,7 +914,7 @@ class SISYPHOS(PT):
 
     exceptions = ["MaxIndices", "MinIndices", "FileMaxIndices", "FileMinIndices", "Redundancy", "Ueqs", "DISPS"]
 
-    with open(f"{self.base_path}/output.txt", "r") as dat:
+    with open(os.path.join(self.base_path,"output.txt"), "r") as dat:
       output = {}
       #stats = {}
       ueqs = {}
