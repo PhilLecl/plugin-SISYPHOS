@@ -188,7 +188,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.log_sth(f"Extracted hkl stats: {stats}")
 
       try:
-        locat = os.path.join(self.base_path,f"{self.name}.cif"
+        locat = os.path.join(self.base_path,f"{self.name}.cif")
         print(locat)
         stats2 = self.parse_cif(locat)
         self.log_sth(f"Extracted cif stats: {stats2} from {locat}")
