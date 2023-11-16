@@ -589,23 +589,32 @@ class SISYPHOS(PT):
   def chooseDir(self) -> str:
     return olex.f('choosedir("Choose your data folder")')
 
-  def setBasePath(self) -> None:
-    out= ""
-    try:
-      out = self.chooseDir()
-    except:
-      print("No directory choosen!")
-    if out == "":
-      print(" ")
+  def setBasePath(self, g_path = None) -> None:
+    if g_path == None:
+      out= ""
+      try:
+        out = self.chooseDir()
+      except:
+        print("No directory choosen!")
+      if out == "":
+        print(" ")
+      else:
+        self.base_path = out
+        print(f"Your data lies at:\n{out}")
     else:
-      self.base_path = out
-      print(f"Your data lies at:\n{out}")
+      self.base_path = path
+      print(f"Your data lies at:\n{path}")
 
-  def setSolutionPath(self) -> None:
-    out = olex.f('fileOpen("Choose Your solution .ins file", "*.ins", filepath())')
-    self.ins_name = os.path.basename(out)
-    self.solution_path = out
-    print(f"Your solution lies at:\n{out} with name {self.ins_name}")
+  def setSolutionPath(self, g_path = None) -> None:
+    if g_path == None:
+      out = olex.f('fileOpen("Choose Your solution .ins file", "*.ins", filepath())')
+      self.ins_name = os.path.basename(out)
+      self.solution_path = out
+      print(f"Your solution lies at:\n{out} with name {self.ins_name}")
+    else:
+      self.solution_path = path
+      self.ins_name = os.path.basename(path)
+      print(f"Your solution lies at:\n{path} with name {self.ins_name}")
 
   def prepare(self) -> list:  #new version 30.05.2023
     hkls_paths = {}
