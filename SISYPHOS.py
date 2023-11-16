@@ -715,7 +715,7 @@ class SISYPHOS(PT):
     print(nos2_dict_cp)
     meth_temp =  nos2_dict_cp["basis_name"].replace('(', '').replace(')', '')
     fun_temp =  nos2_dict_cp["method"]
-    new_dir = os.path.join(self.outdir,f"{key}_{fun_temp}_{meth_temp}"
+    new_dir = os.path.join(self.outdir,f"{key}_{fun_temp}_{meth_temp}")
     if os.path.exists(new_dir):
       i = 1
       while os.path.exists(new_dir+f"_{i}"):
