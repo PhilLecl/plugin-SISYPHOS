@@ -275,7 +275,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth("Failed to extract distances")
         pass
 
-      with open(f"{os.path.dirname(self.base_path)}/output.txt", "a") as out:
+      with open(os.path.join(os.path.dirname(self.base_path),"output.txt"), "a") as out:
         out.write(f"{self.name}:\n")
         out.write("Stats-GetHklStat:\t")
         for key in stats:
@@ -301,6 +301,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         for key in dist_stats:
           out.write(str(key) + ":" + str(dist_errs[key]) + ",")
         out.write("\nWeight:"+str(OV.GetParam('sisyphos.update_weight')))
+        out.write(f"\nNr. NPD:{olx.xf.au.NPDCount()}")
         out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
@@ -378,7 +379,6 @@ class FAPJob:                                   # one FAPjob manages the refinem
       except Exception as e:
         self.log_sth(str(e))
         self.log_sth("Extended cif extraction failed!")
-        pass
       return out
 
     def parse_cif2(self,loc):
@@ -447,10 +447,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
       return out
 
     def get_elements(self) -> list:
-      elements = []
-      for elem in str(olx.xf.GetFormula('list')).split(','):
-        elements.append(elem.split(":")[0])
-      return elements  
+      return [
+          elem.split(":")[0] for elem in str(olx.xf.GetFormula('list')).split(',')
+      ]  
 
     def setupIns(self) -> None:
       self.log_sth(f"\n===========================\nbase_path:{self.base_path}\nenergy_source:{self.energy_source}\nsolution_name:{self.solution_name}\n===========================")
@@ -464,8 +463,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.log_sth(".ins has been setup.")
 
     def setupInsHeader(self) -> None:     # Function for setting .ins if the energy/wl comes from the header   
-      old_ins = os.path.join(self.base_path,self.name+"_old.ins")
-      os.rename(os.path.join(self.base_path,self.name+".ins"),old_ins)
+      old_ins = os.path.join(self.base_path,f"{self.name}_old.ins")
+      os.rename(os.path.join(self.base_path,f"{self.name}.ins"),old_ins)
       with open(self.solution_name, "r") as inp, open(os.path.join(self.base_path,self.name+".ins"), "w") as out:
         energy = self.name.split("_")[-1].split(".")[0]
         try:
@@ -482,8 +481,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.final_ins_path = os.path.join(self.base_path,self.name+".ins")
 
     def setupInsIns(self) -> None:      # Function for setting .ins if the energy/wl comes from the .ins
-      old_ins = os.path.join(self.base_path,self.name+"_old.ins")
-      os.rename(os.path.join(self.base_path,self.name+".ins"),old_ins)
+      old_ins = os.path.join(self.base_path,f"{self.name}_old.ins")
+      os.rename(os.path.join(self.base_path,f"{self.name}.ins"),old_ins)
       with open(self.solution_name, "r") as inp, open(old_ins, "r") as old_inp, open(os.path.join(self.base_path,self.name+".ins"), "w") as out:
         cell = ""
         for line in old_inp:
@@ -497,11 +496,11 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.final_ins_path = os.path.join(self.base_path,self.name+".ins")
 
     def setupInsDefault(self) -> None:
-      with open(self.solution_name, "r") as inp, open(os.path.join(self.base_path,self.name+".ins"), "w") as out:
+      with (open(self.solution_name, "r") as inp, open(os.path.join(self.base_path, f"{self.name}.ins"), "w") as out):
         for line in inp:
           out.write(line)
       self.correct_ins()
-      self.final_ins_path = os.path.join(self.base_path,self.name+".ins")
+      self.final_ins_path = os.path.join(self.base_path, f"{self.name}.ins")
 
     def correct_ins(self) -> None:
       if self.disp and self.disp_source != "refined":
@@ -543,7 +542,33 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth("Failed to extract information!")
 
 class SISYPHOS(PT):
+  """SISYPHOS class for handling data processing and analysis.
+
+    Args:
+        None
+
+    Returns:
+        None
+
+    Raises:
+        None
+
+    Examples:
+        None
+  """
+
   def __init__(self):
+    """Initialize SISYPHOS object.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     super(SISYPHOS, self).__init__()
     self.p_name = p_name
     self.p_path = p_path
@@ -583,6 +608,17 @@ class SISYPHOS(PT):
     OV.registerFunction(self.setGrow,True,"SISYPHOS")
 
   def setBenchmarkFile(self, g_path = None) -> None:
+    """Set the benchmark file path.
+
+        Args:
+            g_path: The path of the benchmark file (default: None).
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     if g_path == None:
       out = olex.f('fileOpen("Please choose a text benchmark file", "*", filepath())')
       self.benchmarkfile_path = out
@@ -592,9 +628,28 @@ class SISYPHOS(PT):
       print(f"Benchmarkfile loaded froms:\n{g_path}")
 
   def chooseDir(self) -> str:
+    """Choose a directory.
+
+        Args:
+            None
+
+        Returns:
+            str: The chosen directory path.
+        """
     return olex.f('choosedir("Choose your data folder")')
 
   def setBasePath(self, g_path = None) -> None:
+    """Set the base path.
+
+        Args:
+            g_path: The path of the base directory (default: None).
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     if g_path == None:
       out= ""
       try:
@@ -611,9 +666,31 @@ class SISYPHOS(PT):
       print(f"Your data lies at:\n{g_path}")
 
   def setGrow(self, grow = True) -> None:
+    """Set the grow parameter.
+
+        Args:
+            grow: The value of the grow parameter (default: True).
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     self.growed = grow
 
   def setSolutionPath(self, g_path = None) -> None:
+    """Set the solution path.
+
+        Args:
+            g_path: The path of the solution file (default: None).
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     if g_path == None:
       out = olex.f('fileOpen("Choose Your solution .ins file", "*.ins", filepath())')
       self.ins_name = os.path.basename(out)
@@ -625,6 +702,14 @@ class SISYPHOS(PT):
       print(f"Your solution lies at:\n{g_path} with name {self.ins_name}")
 
   def prepare(self) -> list:  #new version 30.05.2023
+    """Prepare the job list.
+
+        Args:
+            None
+
+        Returns:
+            list: The list of prepared jobs.
+        """
     hkls_paths = {}
     joblist = []
     elements = self.elem_string.split(",")
@@ -683,6 +768,17 @@ class SISYPHOS(PT):
     return joblist
 
   def prepare_defaultjob(self, key:str, elements, hkls_paths:dict, energy_source)-> FAPJob:
+    """Prepare a default job.
+
+        Args:
+            key: The key.
+            elements: The elements.
+            hkls_paths: The dictionary of HKL paths.
+            energy_source: The energy source.
+
+        Returns:
+            FAPJob: The prepared FAPJob object.
+        """
     nos2_dict_cp = self.nos2_dict.copy()
     new_dir = os.path.join(self.outdir,key)
     if os.path.exists(new_dir):
@@ -712,6 +808,18 @@ class SISYPHOS(PT):
             )
 
   def prepare_benchmarkjob(self, key:str, elements:list, hkls_paths:dict, energy_source, keys) -> FAPJob:
+    """Prepare a benchmark job.
+
+        Args:
+            key: The key.
+            elements: The elements.
+            hkls_paths: The dictionary of HKL paths.
+            energy_source: The energy source.
+            keys: The keys.
+
+        Returns:
+            FAPJob: The prepared FAPJob object.
+        """
     nos2_dict_cp = self.nos2_dict.copy()
     try:
       for keyy in keys:
@@ -755,6 +863,18 @@ class SISYPHOS(PT):
                   )
 
   def prepare_IAM_job(self, key:str, elements:list, hkls_paths:dict, energy_source, keys) -> FAPJob:
+    """Prepare an IAM job.
+
+        Args:
+            key: The key.
+            elements: The elements.
+            hkls_paths: The dictionary of HKL paths.
+            energy_source: The energy source.
+            keys: The keys.
+
+        Returns:
+            FAPJob: The prepared FAPJob object.
+        """
     new_dir = os.path.join(self.outdir,f"{key}_IAM")
     if os.path.exists(new_dir):
       return FAPJob()                                   # skip if same .hkl is found twice (different data should have a different name)
@@ -782,6 +902,17 @@ class SISYPHOS(PT):
                   )
 
   def prepare_dispjob(self, key, elements, hkls_paths,energy_source) -> FAPJob:
+    """Prepare a dispersion job.
+
+        Args:
+            key: The key.
+            elements: The elements.
+            hkls_paths: The dictionary of HKL paths.
+            energy_source: The energy source.
+
+        Returns:
+            FAPJob: The prepared FAPJob object.
+        """
     nos2_dict_cp = self.nos2_dict.copy()
     disp_sources = ["refined"]
     indiv_disps = False         
@@ -858,6 +989,17 @@ class SISYPHOS(PT):
                         )
 
   def prepare_outdir(self) -> None:
+    """Prepare the output directory.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     i = 1                                                   # add a new outputfolder
     while os.path.exists(os.path.join(self.base_path, "SISYoutput"+str(i))):
       i += 1
@@ -865,7 +1007,18 @@ class SISYPHOS(PT):
     os.mkdir(self.outdir)
     self.output_base_path = self.outdir  
 
-  def set_up_params(self) -> None:                              # Handles all settings made in the interface (SISYPHOS.htm)   
+  def set_up_params(self) -> None:                              # Handles all settings made in the interface (SISYPHOS.htm)
+    """Set up the parameters.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     self.elem_string = OV.GetParam("sisyphos.element_string")
     if OV.GetParam("sisyphos.adjustment_eV"):
       self.adjustment_eV = float(OV.GetParam("sisyphos.adjustment_eV"))
@@ -898,7 +1051,18 @@ class SISYPHOS(PT):
       self.nos2_dict[param] = OV.GetParam(f"snum.NoSpherA2.{param}")
     print(self.nos2_dict)
 
-  def print_formula(self) -> None:   #This one does the actual work
+  def print_formula(self) -> None:   
+    """This one does the actual work
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     if self.solution_path == "" or self.base_path == "":
       print("\nPlease set up your data directory and solution first!")
     else:
@@ -924,6 +1088,17 @@ class SISYPHOS(PT):
         print(f"SISYPHOS run finished, results and log in {self.base_path}")
 
   def evaluate(self) -> None:
+    """Evaluate the data of results.
+
+        Args:
+            None
+
+        Returns:
+            None
+
+        Raises:
+            None
+        """
     hkl_stats = ["Name","TotalReflections", "UniqueReflections", "FriedelOppositesMerged", "InconsistentEquivalents", "SystematicAbsencesRemoved", "MinD", \
     "MaxD", "LimDmin", "LimDmax", "FilteredOff", "OmittedByUser", "OmittedReflections", "IntensityTransformed", "Rint", "Rsigma", "MeanIOverSigma", \
     "Completeness", "MaxIndices", "MinIndices", "FileMaxIndices", "FileMinIndices", "ReflectionAPotMax", "FriedelPairCount", "Redundancy","a", "b", "c", \
