@@ -496,7 +496,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       self.final_ins_path = os.path.join(self.base_path,self.name+".ins")
 
     def setupInsDefault(self) -> None:
-      with (open(self.solution_name, "r") as inp, open(os.path.join(self.base_path, f"{self.name}.ins"), "w") as out):
+      with open(self.solution_name, "r") as inp, open(os.path.join(self.base_path, f"{self.name}.ins"), "w") as out:
         for line in inp:
           out.write(line)
       self.correct_ins()
