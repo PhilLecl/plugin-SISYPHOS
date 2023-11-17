@@ -580,6 +580,7 @@ class SISYPHOS(PT):
     OV.registerFunction(self.evaluate,True,"SISYPHOS")
     OV.registerFunction(self.setSolutionPath,True,"SISYPHOS")
     OV.registerFunction(self.setBenchmarkFile,True,"SISYPHOS")
+    OV.registerFunction(self.setGrow,True,"SISYPHOS")
 
   def setBenchmarkFile(self, g_path = None) -> None:
     if g_path == None:
@@ -608,6 +609,9 @@ class SISYPHOS(PT):
     else:
       self.base_path = g_path
       print(f"Your data lies at:\n{g_path}")
+
+  def setGrow(self, grow = True) -> None:
+    self.growed = grow
 
   def setSolutionPath(self, g_path = None) -> None:
     if g_path == None:
