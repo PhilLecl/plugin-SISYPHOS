@@ -8,6 +8,7 @@ import olx
 import math
 import re
 import shutil
+import gc #This is the garbage collector
 from return_WL_energy import ret_wl
 from PluginTools import PluginTools as PT
 
@@ -62,7 +63,6 @@ class FAPJob:                                   # one FAPjob manages the refinem
         "goof"      : 0.0,
         "max_shift_over_esd" : 0.0,
         "hooft_str" : 0.0,
-
       }
       if base_path != "":
         self.log_sth(f"\n++++++++++++++++++++++++++++++++++\nCreated object {self.name}!\n")    #logging progress
@@ -1077,14 +1077,18 @@ class SISYPHOS(PT):
 
         with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
             main_out.write(f"Joblist: \t{joblist}")
+            
+        nr_jobs = len(joblist)
 
-        for job in joblist:
+        for i in range(nr_jobs,0,-1):
           try:
-            job.run()
+            joblist[i-1].run()
           except NameError as error:
-            print(f"ERROR! \nDidnt (fully) run {job.name}!\nSee log for additional info.")
+            print(f"ERROR! \nDidnt (fully) run {joblist[i-1].name}!\nSee log for additional info.")
             print(error)
-        print(joblist)
+          finally:
+            del joblist[i-1]
+            gc.collect()
         print(f"SISYPHOS run finished, results and log in {self.base_path}")
 
   def evaluate(self) -> None:
