@@ -834,7 +834,7 @@ class SISYPHOS(PT):
         k, m = keyy.split(":")
         nos2_dict_cp[k.strip(" ")] = m.strip(" ").strip("\n")
     except:
-      with open(os.path.join(os.path.dirname(self.base_path),"log.txt"),"a") as main_out:
+      with open(os.path.join(self.base_path,"log.txt"),"a") as main_out:
         main_out.write(f"Failed to read instructions for {keys} in benchmarkfile")
     print(nos2_dict_cp)
     meth_temp =  nos2_dict_cp["basis_name"].replace('(', '').replace(')', '')
@@ -1075,7 +1075,7 @@ class SISYPHOS(PT):
         print(f"Wrote results to {self.outdir}")
         print(f"NospherA2 dict: {self.nos2_dict}")
 
-        with open(f"{os.path.dirname(self.base_path)}/log.txt","a") as main_out:
+        with open(os.path.join(self.base_path,"log.txt"),"a") as main_out:
             main_out.write(f"Joblist: \t{joblist}")
             
         nr_jobs = len(joblist)
