@@ -120,9 +120,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           OV.SetParam('snum.refinement.update_weight', False)
           self.log_sth("keeping weighting scheme")
         olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
-        self.log_sth("Set refinement engine olex2.refine with G-N")
-        if self.growed:
-          olex.m("grow")
+        self.log_sth("Set refinement engine olex2.refine with G-N"
         for _ in range(3):
           olex.m("refine 5")
         exti = olx.xf.rm.Exti()
@@ -136,6 +134,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
             olex.m("spy.set_refinement_program(olex2.refine, Levenberg-Marquardt)")
         olex.m("refine 10")
         if self.nos2:
+          if self.growed:
+            olex.m("grow")
           olex.m("neutronhdist")
           self.log_sth("H atoms placed to neutron distances (NeutronHDist command)")
           self.configure_ORCA()
@@ -945,7 +945,7 @@ class SISYPHOS(PT):
           return(FAPJob(                                   # create the FAPJob object here
                                 base_path = new_dir,
                                 solution_name = self.solution_path, 
-                                name = f"{key}_{disp_source}",
+                                name = f"{key}",
                                 energy_source = energy_source, 
                                 resolution = self.resolution,  
                                 disp = self.perform_disp_ref,
@@ -975,7 +975,7 @@ class SISYPHOS(PT):
       return(FAPJob( 
                                 base_path = new_dir, 
                                 solution_name = self.solution_path, 
-                                name = f"{key}_{disp_source}", 
+                                name = f"{key}", 
                                 energy_source = energy_source,
                                 resolution = self.resolution,  
                                 disp = self.perform_disp_ref,

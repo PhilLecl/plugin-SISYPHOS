@@ -61,5 +61,5 @@ def parse_cif(loc):
                     out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
     return out
             
-df1 = parse_cif("./lala_23K.cif")
+df1 = parse_cif("./OW3_rt_Au5filt_17280_run.cif")
 print(df1)
