@@ -120,7 +120,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           OV.SetParam('snum.refinement.update_weight', False)
           self.log_sth("keeping weighting scheme")
         olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
-        self.log_sth("Set refinement engine olex2.refine with G-N"
+        self.log_sth("Set refinement engine olex2.refine with G-N")
         for _ in range(3):
           olex.m("refine 5")
         exti = olx.xf.rm.Exti()
