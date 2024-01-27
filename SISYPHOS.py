@@ -120,7 +120,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           OV.SetParam('snum.refinement.update_weight', False)
           self.log_sth("keeping weighting scheme")
         olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
-        self.log_sth("Set refinement engine olex2.refine with G-N"
+        self.log_sth("Set refinement engine olex2.refine with G-N")
         for _ in range(3):
           olex.m("refine 5")
         exti = olx.xf.rm.Exti()
@@ -164,8 +164,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth(f"{key}: {OV.GetParam(f'snum.NoSpherA2.{key}')}")
       if OV.GetParam('snum.NoSpherA2.multiplicity') == '0':
         self.log_sth("I wil set a Multiplicity of 1, since none selected")
-        OV.SetParam('snum.NoSpherA2.multiplicity', "1")
-
+        OV.SetParam('snum.NoSpherA2.multiplicity', "1")    
 
     def extract_info(self) -> None:
       try:
@@ -196,116 +195,131 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth(str(error))
         self.log_sth("Failed to extract cif stats!")
         pass
-
       
-      dist_stats = {}
-      dist_errs = {}
-      R1_all = 0.0
-      R1_gt = 0.0
-      wR2 = 0.0
-
       try:
-        # This Block will extract the bondlengths from all bonded atoms
-        use_tsc = self.nos2
-        table_name = ""      
-        if use_tsc == True:
-          table_name = str(OV.GetParam("snum.NoSpherA2.file"))
-        from refinement import FullMatrixRefine
-        # Even though never used we need this import since it initializes things we need later on
-        from olexex import OlexRefinementModel
-        from cctbx.array_family import flex
-        from scitbx import matrix
-        from cctbx.crystal import calculate_distances
-        #This creates the FMR with normal equations that carries EVERYTHING!
-        fmr = FullMatrixRefine()
-        if table_name != "":
-          #Do not run refinement, simply prepare equations
-          norm_eq = fmr.run(build_only=True, table_file_name=table_name)
-        else:
-          norm_eq = fmr.run(build_only=True)
-        #and build them
-        norm_eq.build_up(False)
-        R1_all = norm_eq.r1_factor()[0]
-        R1_gt = norm_eq.r1_factor(cutoff_factor=2.0)[0]
-        wR2 = norm_eq.wR2()
-
-        connectivity_full = fmr.reparametrisation.connectivity_table
-        xs = fmr.xray_structure()
-
-        cell_params = fmr.olx_atoms.getCell()
-        cell_errors = fmr.olx_atoms.getCellErrors()
-        cell_vcv = flex.pow2(matrix.diag(cell_errors).as_flex_double_matrix())
-        for i in range(3):
-          for j in range(i+1,3):
-            if (cell_params[i] == cell_params[j] and
-                cell_errors[i] == cell_errors[j] and
-                cell_params[i+3] == 90 and
-                cell_errors[i+3] == 0 and
-                cell_params[j+3] == 90 and
-                cell_errors[j+3] == 0):
-              cell_vcv[i,j] = math.pow(cell_errors[i],2)
-              cell_vcv[j,i] = math.pow(cell_errors[i],2)
-        #Prepare the Cell Variance covariance matrix, since we need it for error propagation in distances
-        cell_vcv = cell_vcv.matrix_symmetric_as_packed_u()
-        sl = xs.scatterers().extract_labels()
-        sf = xs.sites_frac()
-        #This is VCV from refinement equations
-        cm = norm_eq.covariance_matrix_and_annotations().matrix
-        pm = xs.parameter_map()
-        pat = connectivity_full.pair_asu_table
-
-        # calculate the distances using the prepared information
-        distances = calculate_distances(
-          pat,
-          sf,
-          covariance_matrix=cm,
-          cell_covariance_matrix=cell_vcv,
-          parameter_map=pm)
-
-        #The distances only exist once we iterate over them! Therefore build them and save them in this loop
-        for i,d in enumerate(distances):
-          bond = sl[d.i_seq]+"-"+sl[d.j_seq]
-          dist_stats[bond] = distances.distances[i]
-          dist_errs[bond] = math.sqrt(distances.variances[i])
-
+        dist_stats,dist_errs,R1_all,R1_gt,wR2,disp_stats, disp_errs = self.extract_bonds_errors()
+        print("Refined disps:", disp_stats, disp_errs)
       except Exception as error:
         print(error)
         print("Could not obtain cctbx object and calculate ESDs!\n")
         self.log_sth(str(error))
         self.log_sth("Failed to extract distances")
-        pass
+        pass       
 
-      with open(os.path.join(os.path.dirname(self.base_path),"output.txt"), "a") as out:
-        out.write(f"{self.name}:\n")
+      with open(os.path.join(os.path.dirname(self.base_path),"SYSout.txt"), "a") as out:
+        out.write(f"DATANAME:{self.name}\n")
         out.write("Stats-GetHklStat:\t")
         for key in stats:
-          out.write(str(key) + ":" + str(stats[key]) + ",")
+          out.write(str(key) + ":" + str(stats[key]) + ";")
         out.write("\nCell-Stats:\t")  
         for key in stats3:
-          out.write(str(key) + ":" + str(stats3[key]) + ",")
+          out.write(str(key) + ":" + str(stats3[key]) + ";")
         out.write("\nCIF-stats:\t")  
         for key in stats2:
-          out.write(str(key) + ":" + str(stats2[key]) + ",")
+          out.write(str(key) + ":" + str(stats2[key]) + ";")
         out.write("\nNoSpherA2_Dict:\t")
         if self.nos2 == True:
           for key in self.nos2_dict:
-            out.write(str(key) + ":" + str(self.nos2_dict[key]) + ",")
+            out.write(str(key) + ":" + str(self.nos2_dict[key]) + ";")
+        out.write("\nRefined Disps:\t")
+        if self.disp:
+          for key in disp_stats:
+            out.write(str(key) + ":" + str(disp_stats[key]) + ";")
         out.write("\nrefine_dict:\t")
         for key in self.refine_results:
-          out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ",")
-        out.write("R1_all:" + str(R1_all) + ",R1_gt:" + str(R1_gt) + ",wR2:" + str(wR2))
+          out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ";")
+        out.write("R1_all:" + str(R1_all) + ";R1_gt:" + str(R1_gt) + ";wR2:" + str(wR2))
         out.write("\nbondlengths:\t")
         for key in dist_stats:
-          out.write(str(key) + ":" + str(dist_stats[key]) + ",")
+          out.write(str(key) + ":" + str(dist_stats[key]) + ";")
         out.write("\nbonderrors:\t")
         for key in dist_stats:
-          out.write(str(key) + ":" + str(dist_errs[key]) + ",")
+          out.write(str(key) + ":" + str(dist_errs[key]) + ";")
         out.write("\nWeight:"+str(OV.GetParam('sisyphos.update_weight')))
         out.write(f"\nNr. NPD:{olx.xf.au.NPDCount()}")
         out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
       self.log_sth(stats3)
+
+    def extract_bonds_errors(self):
+      dist_stats = {}
+      dist_errs = {}
+      disp_stats = {}
+      disp_errs = {}
+      R1_all = 0.0
+      R1_gt = 0.0
+      wR2 = 0.0
+      
+     # This Block will extract the bondlengths from all bonded atoms
+      use_tsc = self.nos2
+      table_name = ""      
+      if use_tsc == True:
+        table_name = str(OV.GetParam("snum.NoSpherA2.file"))
+      from refinement import FullMatrixRefine
+      # Even though never used we need this import since it initializes things we need later on
+      from olexex import OlexRefinementModel
+      from cctbx.array_family import flex
+      from scitbx import matrix
+      from cctbx.crystal import calculate_distances
+      #This creates the FMR with normal equations that carries EVERYTHING!
+      fmr = FullMatrixRefine()
+      if table_name != "":
+        #Do not run refinement, simply prepare equations
+        norm_eq = fmr.run(build_only=True, table_file_name=table_name)
+      else:
+        norm_eq = fmr.run(build_only=True)
+      #and build them
+      norm_eq.build_up(False)
+      R1_all = norm_eq.r1_factor()[0]
+      R1_gt = norm_eq.r1_factor(cutoff_factor=2.0)[0]
+      wR2 = norm_eq.wR2()
+
+      connectivity_full = fmr.reparametrisation.connectivity_table
+      xs = fmr.xray_structure()
+
+      cell_params = fmr.olx_atoms.getCell()
+      cell_errors = fmr.olx_atoms.getCellErrors()
+      cell_vcv = flex.pow2(matrix.diag(cell_errors).as_flex_double_matrix())
+      for i in range(3):
+        for j in range(i+1,3):
+          if (cell_params[i] == cell_params[j] and
+              cell_errors[i] == cell_errors[j] and
+              cell_params[i+3] == 90 and
+              cell_errors[i+3] == 0 and
+              cell_params[j+3] == 90 and
+              cell_errors[j+3] == 0):
+            cell_vcv[i,j] = math.pow(cell_errors[i],2)
+            cell_vcv[j,i] = math.pow(cell_errors[i],2)
+      #Prepare the Cell Variance covariance matrix, since we need it for error propagation in distances
+      cell_vcv = cell_vcv.matrix_symmetric_as_packed_u()
+      sl = xs.scatterers().extract_labels()
+      sf = xs.sites_frac()
+      #This is VCV from refinement equations
+      cm = norm_eq.covariance_matrix_and_annotations().matrix
+      pm = xs.parameter_map()
+      pat = connectivity_full.pair_asu_table
+
+      # calculate the distances using the prepared information
+      distances = calculate_distances(
+        pat,
+        sf,
+        covariance_matrix=cm,
+        cell_covariance_matrix=cell_vcv,
+        parameter_map=pm)
+
+      #The distances only exist once we iterate over them! Therefore build them and save them in this loop
+      for i,d in enumerate(distances):
+        bond = sl[d.i_seq]+"-"+sl[d.j_seq]
+        dist_stats[bond] = distances.distances[i]
+        dist_errs[bond] = math.sqrt(distances.variances[i])
+      
+      for sc in xs.scatterers():
+        if sc.flags.grad_fp() or sc.flags.grad_fdp():
+          fp, fdp = sc.fp, sc.fdp
+          disp_stats[sc.label] = (fp, fdp)
+        
+      return dist_stats,dist_errs,R1_all,R1_gt,wR2,disp_stats, disp_errs 
 
     def parse_cif(self, loc: str) -> dict:
       """Parses the cif given by loc and returns a dictionary of parsed information
@@ -379,71 +393,6 @@ class FAPJob:                                   # one FAPjob manages the refinem
       except Exception as e:
         self.log_sth(str(e))
         self.log_sth("Extended cif extraction failed!")
-      return out
-
-    def parse_cif2(self,loc):
-      self.log_sth(f"Looking for cif information at: {loc}")
-      dat_names = ["mu", 
-            "wavelength", 
-            "F000", 
-            "tot_reflIns", 
-            "goof", 
-            "R_all", 
-            "R1", 
-            "wR2", 
-            "last Shift"]
-
-      corr_filts = ["exptl_absorpt_coefficient_mu", 
-                    "diffrn_radiation_wavelength", 
-                    "exptl_crystal_F_000",
-                    "diffrn_reflns_number",
-                    "refine_ls_goodness_of_fit_ref",
-                    "refine_ls_R_factor_all",
-                    "refine_ls_R_factor_gt",
-                    "refine_ls_wR_factor_ref",
-                    "REM Shift_max"]
-
-      out = {}
-
-      with open(loc, "r") as incif:
-        for line in incif:
-          for i,filter in enumerate(corr_filts):
-            if filter in line:
-              out[f"{dat_names[i]}"] = float(line.split()[-1])
-
-      with open(loc, "r") as incif:
-        for elem in self.elements:
-          if self.disp == True:
-            switch = True
-            for line in incif:
-              if  line.startswith(f" {elem} ") and switch:
-                switch = False
-                if "(" in line.split(" ")[3]:
-                  fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
-                  fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
-                  out[f"{elem}_anoms_SD"] = (fp,fdp)
-                else:
-                  fp = float(line.split(" ")[2])
-                  fdp = float(line.split(" ")[3])
-                  out[f"{elem}_anoms"] = (fp,fdp)
-          incif.seek(0)
-        switch2 = False
-        for line in incif:              
-          if line.startswith("  _atom_site_refinement_flags_occupancy") or line.startswith("  _atom_site_refinement_flags_posn"):
-            switch2 = True
-            continue
-          if switch2:
-            if line.startswith("\n"):
-              switch2 = False
-            else:
-              try:
-                lin = line.split(" ")
-                atom = lin[1]
-                ueq = lin[6].split("(")[0]
-                ueq_delta = lin[6].split("(")[1][:-1]
-                out[f"{atom}_ueq_SD"] = (float(ueq), int(ueq_delta))
-              except:
-                print("Skipped some Ueqs")
       return out
 
     def get_elements(self) -> list:
@@ -525,7 +474,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 file.write(line)
         self.log_sth("Corrected .ins for dispersion")  
       else: self.log_sth("Did not correct for DISP")
-
+           
     def run(self) -> None:
       self.setupIns()
       if os.path.getsize(self.final_ins_path) == 0:
@@ -538,7 +487,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.extract_info()
         self.log_sth("=========================== Extracted Information ===========================")
       except:
-        print("Faield to extract information")
+        print("Failed to extract information")
         self.log_sth("Failed to extract information!")
 
 class SISYPHOS(PT):
@@ -664,6 +613,9 @@ class SISYPHOS(PT):
     else:
       self.base_path = g_path
       print(f"Your data lies at:\n{g_path}")
+    olx.html.SetValue('SIS_DIR', out)
+    OV.SetParam('sisyphos.gui.working_dir', out)  
+    #self.save_sisyphos_phil()
 
   def setGrow(self, grow = True) -> None:
     """Set the grow parameter.
@@ -700,6 +652,10 @@ class SISYPHOS(PT):
       self.solution_path = g_path
       self.ins_name = os.path.basename(g_path)
       print(f"Your solution lies at:\n{g_path} with name {self.ins_name}")
+    olx.html.SetValue('SIS_INS', self.ins_name)
+    OV.SetParam('sisyphos.gui.solution_ins',self.ins_name)
+    self.save_sisyphos_phil()
+    olex.m("reap '%s'" %out)
 
   def prepare(self) -> list:  #new version 30.05.2023
     """Prepare the job list.

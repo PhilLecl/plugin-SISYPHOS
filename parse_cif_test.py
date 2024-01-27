@@ -39,6 +39,8 @@ def parse_cif(loc):
                     switch = False
                     if "(" in line.split(" ")[3]:
                         print(line)
+                        name = line.split[1]
+                        print(name)
                         fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
                         fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
                     else:

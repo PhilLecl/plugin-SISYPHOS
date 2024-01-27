@@ -13,12 +13,62 @@
 
 <!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
 <!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=Inputs; help_ext=Inputs;1; -->
-<td ALIGN='left' width='33%'>
-    <b><a href="spy.SISYPHOS.setBasePath()">Set working dir</a>
+
+
+$+
+html.Snippet(GetVar(default_link),
+"value=DIR",
+"name=DEFBTN_SIS_DIR",
+"scope=#scope",
+"onclick=spy.SISYPHOS.setBasePath()",
+"bgcolor=GetVar(gui.blue)",
+"fgcolor=#ffffff",
+)
+$-
+
+
+<td ALIGN='left' width='35%'>
+$+
+html.Snippet("gui/snippets/input-text",
+"name=SIS_DIR",
+"value=spy.GetParam('sisyphos.gui.working_dir')",
+"onchange=spy.SetParam('sisyphos.gui.working_dir',html.GetValue(~name~))",
+"readonly=false")
+$-
 </td>
-<td ALIGN='center' width='33%'>
-    <b><a href="spy.SISYPHOS.setSolutionPath()">Set solution .ins</a>
+
+$+
+html.Snippet(GetVar(default_link),
+"value=.ins",
+"name=DEFBTN_SIS_INS",
+"scope=#scope",
+"onclick=spy.SISYPHOS.setSolutionPath()",
+"bgcolor=GetVar(gui.blue)",
+"fgcolor=#ffffff",
+)
+$-
+
+<td ALIGN='center' width='35%'>
+$+
+html.Snippet("gui/snippets/input-text",
+"name=SIS_INS",
+"value=spy.GetParam('sisyphos.gui.solution_ins')",
+"onchange=spy.SetParam('sisyphos.gui.solution_ins',html.GetValue(~name~))",
+"readonly=false")
+$-
 </td>
+
+$+
+html.Snippet(GetVar(default_link),
+"value=STOP",
+"name=DEFBTN_GO",
+"scope=#scope",
+"onclick=spy.SISYPHOS.write_stop_file()",
+"bgcolor=GetVar(gui.red)",
+"fgcolor=#ffffff",
+)
+$-
+
 <!-- #ignoreif not spy.GetParam('sisyphos.benchmark_mode')
 <td ALIGN='right' width='34%'>
     <b><a href="spy.SISYPHOS.setBenchmarkFile()">Set benchmark file</a>
