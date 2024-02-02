@@ -119,18 +119,19 @@ class FAPJob:                                   # one FAPjob manages the refinem
         else:
           OV.SetParam('snum.refinement.update_weight', False)
           self.log_sth("keeping weighting scheme")
-        olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
-        self.log_sth("Set refinement engine olex2.refine with G-N")
+        if not self.disp:
+          olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
+          self.log_sth("Set refinement engine olex2.refine with G-N")
         for _ in range(3):
           olex.m("refine 5")
         exti = olx.xf.rm.Exti()
         self.log_sth(f"Found Extinction: {exti}")
         if exti != "n/a":
-          if float(exti.split("(")[0]) < 0.001:
+          if float(exti.split("(")[0].split(".")[1].lstrip("0")) < 3*float(exti.split("(")[1].strip(')')):
             olex.m("delins EXTI")
             self.log_sth(f"Deleted EXTI with exti of: {exti}")
           else:
-            self.log_sth("Exti > 0.001, set L-M instead of G-N")
+            self.log_sth("Exti > 3SDs, set L-M instead of G-N")
             olex.m("spy.set_refinement_program(olex2.refine, Levenberg-Marquardt)")
         olex.m("refine 10")
         if self.nos2:
@@ -655,7 +656,7 @@ class SISYPHOS(PT):
     olx.html.SetValue('SIS_INS', self.ins_name)
     OV.SetParam('sisyphos.gui.solution_ins',self.ins_name)
     self.save_sisyphos_phil()
-    olex.m("reap '%s'" %out)
+    #olex.m("reap '%s'" %out)
 
   def prepare(self) -> list:  #new version 30.05.2023
     """Prepare the job list.
@@ -674,9 +675,8 @@ class SISYPHOS(PT):
     # Iterate through all files and directories in the source folder
     for root, dirs, files in os.walk(self.base_path):
         # Exclude folders named "olex2" and their subfolders
-        if os.path.basename(root) == "olex2":
-            continue
-
+        if os.path.basename(root) == "olex2" or os.path.basename(root) == "originals":
+            continue   
         # Iterate through all files in the current directory
         for file in files:
             if "SISYoutput" in root:
@@ -1098,5 +1098,32 @@ class SISYPHOS(PT):
                 ueqs[atom] = itm.split(":")[1]+")"
       output["Ueqs"] = ueqs
 
+  def save_sisyphos_phil(self):
+    _ = os.path.join(OV.DataDir(), "%s.phil" % p_scope)
+    olx.phil_handler.save_param_file(file_name=_, scope_name=p_scope, diff_only=True)
+
+  def load_sisyphos_phil(self):
+    _ = os.path.join(OV.DataDir(), "%s.phil" % p_scope)
+    if os.path.exists(_):
+      phil_string = open(_, 'r').read()
+      olx.phil_handler.adopt_phil(phil_string=phil_string)
+      olx.phil_handler.rebuild_index()
+
+  def write_stop_file(self):
+    p = os.path.join(self.base_path, "stop.txt")
+    f = open(p, "a")
+    f.write("")
+    f.close()
+    print("STOP file has been written")
+
+  def test_for_stop(self):
+    import os
+    p = os.path.join(self.base_path, "stop.txt")
+    if os.path.exists(p):
+      os.remove(p)
+      print("The process has been stopped")
+      return True
+    else:
+      return False
 
 SISYPHOS_instance = SISYPHOS()
