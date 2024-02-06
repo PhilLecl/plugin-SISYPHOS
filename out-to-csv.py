@@ -1,4 +1,5 @@
 import pandas as pd
+import sys
 from scipy import constants as conts
 
 def ret_energy(wavelength):
@@ -6,6 +7,10 @@ def ret_energy(wavelength):
 
 def ret_wl(energy):
     return (conts.h * conts.c) / (energy*conts.e) / conts.angstrom
+
+def main():
+    for arg in sys.argv:
+        evaluate(arg)
 
 def evaluate(loc):
     with open(loc, "r") as inp:
@@ -23,6 +28,7 @@ def evaluate(loc):
         for i in range(len(block)):
             if "\t" in block[i]:
                 block[i] = block[i].split("\t")[1]
+            if "\n" in block[i]:
                 block[i] = block[i].strip("\n")
         for elem in block:
             for piece in elem.split(";"):
@@ -31,6 +37,9 @@ def evaluate(loc):
                     outdir[key] = value
                 else:
                     continue
-        df = df.append(outdir, ignore_index =True)
-    df["energy"] = ret_energy(df["wavelength"])
+        result = pd.DataFrame(outdir, index=[0])
+        df = pd.concat([df, result], ignore_index=True)
     df.to_csv("SYSout.csv")
+
+if __name__ == '__main__':
+    main()
