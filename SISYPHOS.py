@@ -37,7 +37,7 @@ p_scope = d['p_scope']
 OV.SetVar('SISYPHOS_plugin_path', p_path)
 
 class FAPJob:                                   # one FAPjob manages the refinement, logging and output of one data set of the same structure as all other jobs
-    def __init__(self, base_path = "", solution_name = "", name = "", resolution= "", energy_source = "", nos2_dict=None, indiv_disps = False, disp = False, disp_source = "", elements=None, nos2 = False, growed = False, benchmark = False):
+    def __init__(self, base_path = "", solution_name = "", name = "", resolution= "", energy_source = "", nos2_dict=None, indiv_disps = True, disp = False, disp_source = "", elements=None, nos2 = False, growed = False, benchmark = False):
       if nos2_dict is None:
         nos2_dict = {}
       if elements is None:
@@ -102,14 +102,18 @@ class FAPJob:                                   # one FAPjob manages the refinem
         if self.resolution > 0:
           olex.m(f"SHEL 99 {self.resolution}")
         if self.disp:
+          olex.m("fix disp -c")
           if self.disp_source != "refined":
             olex.m(f"gendisp -force -source={self.disp_source}")
             self.log_sth(fr"{self.name}:\t Forced gendisp command with {self.disp_source} as dispersion source!\n")
           if self.disp_source == "refined":
             for elem in self.elements:
               olex.m(f"free disp ${elem}")
-              if not self.indiv_disps:
-                olex.m(f"same disp ${elem}")
+              if self.indiv_disps:
+                olex.m("fix disp -c")
+                olex.m(f"free disp ${elem}")
+              else:
+                olex.m(f"same disp ${elem}")        
         else:
           olex.m("fix disp -c")
         OV.SetParam('snum.NoSpherA2.use_aspherical',False)
@@ -130,6 +134,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           if float(exti.split("(")[0].split(".")[1].lstrip("0")) < 3*float(exti.split("(")[1].strip(')')):
             olex.m("delins EXTI")
             self.log_sth(f"Deleted EXTI with exti of: {exti}")
+            olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
           else:
             self.log_sth("Exti > 3SDs, set L-M instead of G-N")
             olex.m("spy.set_refinement_program(olex2.refine, Levenberg-Marquardt)")
@@ -318,7 +323,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       for sc in xs.scatterers():
         if sc.flags.grad_fp() or sc.flags.grad_fdp():
           fp, fdp = sc.fp, sc.fdp
-          disp_stats[sc.label] = (fp, fdp)
+          disp_stats[f"{sc.label}_anom"] = (fp, fdp)
         
       return dist_stats,dist_errs,R1_all,R1_gt,wR2,disp_stats, disp_errs 
 
@@ -392,6 +397,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 ueq_delta = lin[6].split("(")[1][:-1]
                 out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
       except Exception as e:
+        self.log_sth(f"Failed at line {line}")
         self.log_sth(str(e))
         self.log_sth("Extended cif extraction failed!")
       return out
@@ -984,7 +990,6 @@ class SISYPHOS(PT):
     self.perform_disp_ref = OV.GetParam("sisyphos.perform_disp_ref")
     if self.perform_disp_ref:
       self.indiv_disp = OV.GetParam("sisyphos.indiv_disp")
-      self.indiv_disp = OV.GetParam("sisyphos.same_disp")
       self.elem_string = OV.GetParam("sisyphos.element_string")
     self.benchmark = OV.GetParam("sisyphos.benchmark_mode")
     self.henke = OV.GetParam("sisyphos.henke")

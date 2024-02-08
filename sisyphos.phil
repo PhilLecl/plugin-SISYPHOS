@@ -33,10 +33,7 @@ sisyphos{
   energies_from_ins = False
   .type = bool
 
-  same_disp = False
-  .type = bool
-
-  indiv_disp = False
+  indiv_disp = True
   .type = bool
 
   update_weight = True

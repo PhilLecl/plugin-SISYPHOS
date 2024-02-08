@@ -81,7 +81,7 @@ $-
     <b>%Elements%:</b>
 </td>
 
-<td align='left'>
+<td width='40%' align='left'>
   $+
     html.Snippet("gui/snippets/input-text",
     "name=element_string",
@@ -91,27 +91,13 @@ $-
   $-
 </td>
 
-<!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
-<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name='disp';help_ext=disp;1 -->
-<td width='2%' align="left">
-  $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Same DISP",
-    "label=Same DISP",
-    "checked=spy.GetParam('sisyphos.same_disp')",
-    "oncheck=spy.SetParam('sisyphos.same_disp','True')>>spy.SetParam('sisyphos.indiv_disp','False')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.same_disp','False')>>html.Update()"
-    )
-  $-
-</td>
-<td width='2%' align="left">
+<td width='2%' align="right">
   $+
     html.Snippet("gui/snippets/input-checkbox-td",
     "name=Individual DISP",
     "label=Individual DISP",
     "checked=spy.GetParam('sisyphos.indiv_disp')",
-    "oncheck=spy.SetParam('sisyphos.indiv_disp','True')>>spy.SetParam('sisyphos.same_disp','False') >>html.Update()",
+    "oncheck=spy.SetParam('sisyphos.indiv_disp','True')>>html.Update()",
     "bgcolor=GetVar(HtmlTableRowBgColour)",
     "onuncheck=spy.SetParam('sisyphos.indiv_disp','False')>>html.Update()"
     )
