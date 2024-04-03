@@ -148,6 +148,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
           olex.m("refine 10")
         counter = 0
         self.log_sth(f'Final Shift: {abs(OV.GetParam("snum.refinement.max_shift_over_esd"))}')
+        olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
+        olex.m("refine 20")
+        olex.m("refine 20")
         while abs(OV.GetParam("snum.refinement.max_shift_over_esd")) > 0.005:
           olex.m("refine 20")
           counter += 1
