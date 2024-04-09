@@ -216,6 +216,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         pass       
 
       with open(os.path.join(os.path.dirname(self.base_path),"SYSout.txt"), "a") as out:
+        out.write("\n+++++++++++++++++++\n")
         out.write(f"DATANAME:{self.name}\n")
         out.write("Stats-GetHklStat:\t")
         for key in stats:
@@ -226,27 +227,33 @@ class FAPJob:                                   # one FAPjob manages the refinem
         out.write("\nCIF-stats:\t")  
         for key in stats2:
           out.write(str(key) + ":" + str(stats2[key]) + ";")
-        out.write("\nNoSpherA2_Dict:\t")
         if self.nos2 == True:
+          out.write("\nNoSpherA2_Dict:\t")
           for key in self.nos2_dict:
             out.write(str(key) + ":" + str(self.nos2_dict[key]) + ";")
-        out.write("\nRefined Disps:\t")
         if self.disp:
+          out.write("\nRefined Disps:\t")
           for key in disp_stats:
             out.write(str(key) + ":" + str(disp_stats[key]) + ";")
         out.write("\nrefine_dict:\t")
-        for key in self.refine_results:
-          out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ";")
-        out.write("R1_all:" + str(R1_all) + ";R1_gt:" + str(R1_gt) + ";wR2:" + str(wR2))
-        out.write("\nbondlengths:\t")
-        for key in dist_stats:
-          out.write(str(key) + ":" + str(dist_stats[key]) + ";")
-        out.write("\nbonderrors:\t")
-        for key in dist_stats:
-          out.write(str(key) + ":" + str(dist_errs[key]) + ";")
+        print(self.refine_results)
+        try:
+          for key in self.refine_results:
+            out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ";")
+          out.write("R1_all:" + str(R1_all) + ";R1_gt:" + str(R1_gt) + ";wR2:" + str(wR2))
+          out.write("\nbondlengths:\t")
+        except Exception:
+          self.log_sth("Could not write refine_results")
+        try:
+          for key in dist_stats:
+            out.write(str(key) + ":" + str(dist_stats[key]) + ";")
+          out.write("\nbonderrors:\t")
+          for key in dist_stats:
+            out.write(str(key) + ":" + str(dist_errs[key]) + ";")
+        except Exception:
+          self.log_sth("Writing of distances failed!")
         out.write("\nWeight:"+str(OV.GetParam('sisyphos.update_weight')))
         out.write(f"\nNr. NPD:{olx.xf.au.NPDCount()}")
-        out.write("\n+++++++++++++++++++\n")
       self.log_sth(stats)
       self.log_sth(stats2)
       self.log_sth(stats3)
