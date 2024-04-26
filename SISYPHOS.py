@@ -11,6 +11,10 @@ import shutil
 import gc #This is the garbage collector
 from return_WL_energy import ret_wl
 from PluginTools import PluginTools as PT
+try:
+  import SYStocsv as SYS
+except:
+  print("No pandas found, evaluate not possible")
 
 debug = bool(OV.GetParam("olex2.debug", False))
 
@@ -563,12 +567,13 @@ class SISYPHOS(PT):
     self.indiv_disp = False
     self.same_disp = True
     self.nos2_dict = {}
+    self.struct = True
     self.outdir = ""
     if not from_outside:
       self.setup_gui()
     OV.registerFunction(self.print_formula,True,"SISYPHOS")
     OV.registerFunction(self.setBasePath,True,"SISYPHOS")
-    OV.registerFunction(self.evaluate,True,"SISYPHOS")
+    OV.registerFunction(self.writecsv,True,"SISYPHOS")
     OV.registerFunction(self.setSolutionPath,True,"SISYPHOS")
     OV.registerFunction(self.setBenchmarkFile,True,"SISYPHOS")
     OV.registerFunction(self.setGrow,True,"SISYPHOS")
@@ -695,6 +700,16 @@ class SISYPHOS(PT):
             continue   
         # Iterate through all files in the current directory
         for file in files:
+          if self.struct:
+            if "SISYoutput" in root:
+              continue
+            elif os.path.join("olex2", "temp") in root or os.path.join("olex2", "Wfn_job") in root:
+              continue
+            elif file.endswith(".hkl") and "struct" in root:              
+                #source_file = os.path.join(root, file)
+                name = os.path.splitext(file)[0]  # Extract the name without the extension
+                hkls_paths[name] = os.path.join(root,file)
+          else:
             if "SISYoutput" in root:
               continue
             elif os.path.join("olex2", "temp") in root or os.path.join("olex2", "Wfn_job") in root:
@@ -703,6 +718,7 @@ class SISYPHOS(PT):
                 #source_file = os.path.join(root, file)
                 name = os.path.splitext(file)[0]  # Extract the name without the extension
                 hkls_paths[name] = os.path.join(root,file)
+            
     print(hkls_paths)
     self.prepare_outdir()
 
@@ -1005,6 +1021,7 @@ class SISYPHOS(PT):
     self.henke = OV.GetParam("sisyphos.henke")
     self.sasaki = OV.GetParam("sisyphos.sasaki")
     self.brennan = OV.GetParam("sisyphos.brennan")
+    self.struct = OV.GetParam("sisyphos.struct_only")
     self.energies_from_headers = OV.GetParam("sisyphos.energies_from_headers")
     self.energy_from_ins = OV.GetParam("sisyphos.energies_from_ins")
     self.same_disp = OV.GetParam("sisyphos.energies_from_ins")
@@ -1061,57 +1078,10 @@ class SISYPHOS(PT):
             del joblist[i-1]
             gc.collect()
         print(f"SISYPHOS run finished, results and log in {self.base_path}")
+        #self.writecsv()
 
-  def evaluate(self) -> None:
-    """Evaluate the data of results.
-
-        Args:
-            None
-
-        Returns:
-            None
-
-        Raises:
-            None
-        """
-    hkl_stats = ["Name","TotalReflections", "UniqueReflections", "FriedelOppositesMerged", "InconsistentEquivalents", "SystematicAbsencesRemoved", "MinD", \
-    "MaxD", "LimDmin", "LimDmax", "FilteredOff", "OmittedByUser", "OmittedReflections", "IntensityTransformed", "Rint", "Rsigma", "MeanIOverSigma", \
-    "Completeness", "MaxIndices", "MinIndices", "FileMaxIndices", "FileMinIndices", "ReflectionAPotMax", "FriedelPairCount", "Redundancy","a", "b", "c", \
-    "alpha", "beta", "gamma", "volume", "Z", "Zprime", "mu", "F000", "TotalReflections", "wavelength", "goof", "R_all", "R1", "wR2", "DISPS", "last Shift", "Ueqs"]
-
-    exceptions = ["MaxIndices", "MinIndices", "FileMaxIndices", "FileMinIndices", "Redundancy", "Ueqs", "DISPS"]
-
-    with open(os.path.join(self.base_path,"output.txt"), "r") as dat:
-      output = {}
-      #stats = {}
-      ueqs = {}
-      for line in dat: 
-        if ":\n" in line:
-          output["Ueqs"] = ueqs
-          #output = output.append(stats, ignore_index=True)
-          output["Name"] = line.split(":")[0]
-        for key in hkl_stats:
-          if key in line:
-            if key in exceptions:
-              if key == "DISPS":
-                output[key] = "placeholder"
-              else:
-                output[key] = re.findall(f"{key}:.+,",line)[0].split(")")[0].split(":")[1]+")"
-            else:
-              try:
-                output[key] = re.findall(f"{key}:.+,",line)[0].split(",")[0].split(":")[1]
-              except:
-                if key == "a" or key == "b" or key == "c":
-                  continue
-                else: 
-                  print(f"Failed at {key}")  
-          if "_ueq" in line:
-            line_items = line.split(")")
-            for itm in line_items:
-              if "_ueq" in itm:
-                atom = itm.split(":")[0][1:]
-                ueqs[atom] = itm.split(":")[1]+")"
-      output["Ueqs"] = ueqs
+  def writecsv(self):
+    SYS.evaluate(os.join('/',self.outdir, "SYSout.txt"))
 
   def save_sisyphos_phil(self):
     _ = os.path.join(OV.DataDir(), "%s.phil" % p_scope)
@@ -1140,5 +1110,8 @@ class SISYPHOS(PT):
       return True
     else:
       return False
+    
+  
+    
 
 SISYPHOS_instance = SISYPHOS()

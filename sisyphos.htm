@@ -190,6 +190,18 @@ $-
     )
   $-
 </td>
+<td width='2%' align="left">
+  $+
+    html.Snippet("gui/snippets/input-checkbox-td",
+    "name=Struct only",
+    "label=Struct only",
+    "checked=spy.GetParam('sisyphos.struct_only')",
+    "oncheck=spy.SetParam('sisyphos.struct_only','True')>>html.Update()",
+    "bgcolor=GetVar(HtmlTableRowBgColour)",
+    "onuncheck=spy.SetParam('sisyphos.struct_only','False')>>html.Update()"
+    )
+  $-
+</td>
 
 <!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
 
