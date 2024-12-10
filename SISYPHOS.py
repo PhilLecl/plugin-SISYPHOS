@@ -12,9 +12,10 @@ import gc #This is the garbage collector
 from return_WL_energy import ret_wl
 from PluginTools import PluginTools as PT
 try:
-  import SYStocsv as SYS
+  import SYStocsv as SYS2csv
+  import matplotlib.pyplot as plt
 except:
-  print("No pandas found, evaluate not possible")
+  print("No pandas or matplotlib found, evaluate not possible")
 
 debug = bool(OV.GetParam("olex2.debug", False))
 
@@ -101,7 +102,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         olex.m(f"reap {self.final_ins_path}")
         self.log_sth(f"Was able to load .ins: {self.final_ins_path}")
         self.log_sth("=========================== Starting New Refinment ===========================")
-        olx.AddIns("EXTI")
+        olx.AddIns("EXTI") 
         olx.AddIns("ACTA")
         if self.resolution > 0:
           olex.m(f"SHEL 99 {self.resolution}")
@@ -1078,10 +1079,10 @@ class SISYPHOS(PT):
             del joblist[i-1]
             gc.collect()
         print(f"SISYPHOS run finished, results and log in {self.base_path}")
-        #self.writecsv()
+        self.writecsv()
 
   def writecsv(self):
-    SYS.evaluate(os.join('/',self.outdir, "SYSout.txt"))
+    SYS2csv.evaluate(os.path.join('/',self.outdir, "SYSout.txt"), self.outdir, "results.csv")
 
   def save_sisyphos_phil(self):
     _ = os.path.join(OV.DataDir(), "%s.phil" % p_scope)
