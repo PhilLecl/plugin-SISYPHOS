@@ -39,6 +39,9 @@ sisyphos{
   update_weight = True
   .type = bool
 
+  struct_only = True
+  .type = bool
+
   gui{
     location = 'tools'
       .type = str
