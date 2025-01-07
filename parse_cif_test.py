@@ -1,6 +1,6 @@
 import os
 
-elem_string = ["U"]
+elements = ["Au"]
 
 dat_names = ["mu", 
              "wavelength", 
@@ -33,35 +33,13 @@ def parse_cif(loc):
     with open(loc, "r") as incif:
         switch2 = False
         for line in incif:
-            for elem in elem_string:
+              for elem in elements:
                 switch = True                
-                if  line.startswith(f" {elem} ") & switch:
-                    switch = False
-                    if "(" in line.split(" ")[3]:
-                        print(line)
-                        name = line.split[1]
-                        print(name)
-                        fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
-                        fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
-                    else:
-                        print(line)
-                        fp = float(line.split(" ")[2])
-                        fdp = float(line.split(" ")[3])
-                    out[f"{elem}_anoms"] = (fp,fdp)
-
-            if line.startswith("  _atom_site_refinement_flags_occupancy"):
-                switch2 = True
-                continue
-            if switch2:
-                if line.startswith("\n"):
-                    switch2 = False
-                else:
-                    lin = line.split(" ")
-                    atom = lin[1]
-                    ueq = lin[6].split("(")[0]
-                    ueq_delta = lin[6].split("(")[1][:-1]
-                    out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
+                if line.startswith(f" {elem}  ") & switch:
+                    print(line)
+                    if " . . " in line:
+                      continue
     return out
             
-df1 = parse_cif("./OW3_rt_Au5filt_17280_run.cif")
+df1 = parse_cif("./pirEt_epsilon_11929_smart3_emp.cif")
 print(df1)
