@@ -1079,7 +1079,10 @@ class SISYPHOS(PT):
             del joblist[i-1]
             gc.collect()
         print(f"SISYPHOS run finished, results and log in {self.base_path}")
-        self.writecsv()
+        try:
+          self.writecsv()
+        except:
+          print("Something with the CSV generation did not work, are pandas and matplotlib installed? Output was generated anyways.")
 
   def writecsv(self):
     SYS2csv.evaluate(os.path.join('/',self.outdir, "SYSout.txt"), self.outdir, "results.csv")
