@@ -1003,11 +1003,11 @@ class SISYPHOS(PT):
                   "multiplicity", "full_HAR",
                   "Max_HAR_Cycles","becke_accuracy",
                   "Relativistic", "h_aniso", 
-                  "h_afix", "add_disp", 
+                  "h_afix",
                   "cluster_radius", "DIIS",
                   "cluster_grow", "ORCA_SCF_Conv",
                   "ORCA_SCF_Strategy", "ORCA_Solvation",
-                  "pySCF_Damping"]
+                  "pySCF_Damping", "ORCA_DAMP"]
     for param in nos_params:
       self.nos2_dict[param] = OV.GetParam(f"snum.NoSpherA2.{param}")
     print(self.nos2_dict)
