@@ -334,13 +334,14 @@ class FAPJob:                                   # one FAPjob manages the refinem
         bond = sl[d.i_seq]+"-"+sl[d.j_seq]
         dist_stats[bond] = distances.distances[i]
         dist_errs[bond] = math.sqrt(distances.variances[i])
-      
-      for sc in xs.scatterers():
-        if sc.flags.grad_fp() or sc.flags.grad_fdp():
-          fp, fdp = sc.fp, sc.fdp
-          disp_stats[f"{sc.label}_anom"] = (fp, fdp)
-        
-      return dist_stats,dist_errs,R1_all,R1_gt,wR2,disp_stats, disp_errs 
+      try:
+        for sc in xs.scatterers():
+          if sc.flags.grad_fp() or sc.flags.grad_fdp():
+            fp, fdp = sc.fp, sc.fdp
+            disp_stats[f"{sc.label}_anom"] = (fp, fdp)
+        return dist_stats,dist_errs,R1_all,R1_gt,wR2,disp_stats, disp_errs 
+      except:
+        self.log_sth("Extraction of DISP Values failed!")
 
     def parse_cif(self, loc: str) -> dict:
       """Parses the cif given by loc and returns a dictionary of parsed information
@@ -385,20 +386,22 @@ class FAPJob:                                   # one FAPjob manages the refinem
         with open(loc, "r") as incif:
           switch2 = False
           for line in incif:
-            if self.disp == True:
-              for elem in self.elements:
-                switch = True                
-                if  line.startswith(f" {elem} ") & switch:
-                  switch = False
-                  if "(" in line.split(" ")[3]:
-                    print(line)
-                    fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
-                    fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
-                  else:
-                    print(line)
-                    fp = float(line.split(" ")[2])
-                    fdp = float(line.split(" ")[3])
-                  out[f"{elem}_anoms"] = (fp,fdp)
+#            if self.disp == True:
+#              for elem in self.elements:
+#                switch = True                
+#                if line.startswith(f" {elem} ") & switch:
+#                  switch = False
+#                  if " . . " in line:
+#                      continue
+#                  if "(" in line.split(" ")[3]:
+#                    print(line)
+#                    fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
+#                    fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
+#                  else:
+#                    print(line)
+#                    fp = float(line.split(" ")[2])
+#                    fdp = float(line.split(" ")[3])
+#                  out[f"{elem}_anoms"] = (fp,fdp)
             if line.startswith("  _atom_site_refinement_flags_occupancy"):
               switch2 = True
               continue
@@ -411,6 +414,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 ueq = lin[6].split("(")[0]
                 ueq_delta = lin[6].split("(")[1][:-1]
                 out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
+        self.log_sth("Extended cif extraction succesfull :)")
       except Exception as e:
         self.log_sth(f"Failed at line {line}")
         self.log_sth(str(e))
@@ -574,7 +578,7 @@ class SISYPHOS(PT):
       self.setup_gui()
     OV.registerFunction(self.print_formula,True,"SISYPHOS")
     OV.registerFunction(self.setBasePath,True,"SISYPHOS")
-    OV.registerFunction(self.writecsv,True,"SISYPHOS")
+    #OV.registerFunction(self.writecsv,True,"SISYPHOS")
     OV.registerFunction(self.setSolutionPath,True,"SISYPHOS")
     OV.registerFunction(self.setBenchmarkFile,True,"SISYPHOS")
     OV.registerFunction(self.setGrow,True,"SISYPHOS")
@@ -1079,13 +1083,13 @@ class SISYPHOS(PT):
             del joblist[i-1]
             gc.collect()
         print(f"SISYPHOS run finished, results and log in {self.base_path}")
-        try:
-          self.writecsv()
-        except:
-          print("Something with the CSV generation did not work, are pandas and matplotlib installed? Output was generated anyways.")
+        #try:
+        #  self.writecsv()
+        #except:
+        #  print("Something with the CSV generation did not work, are pandas and matplotlib installed? Output was generated anyways.")
 
-  def writecsv(self):
-    SYS2csv.evaluate(os.path.join('/',self.outdir, "SYSout.txt"), self.outdir, "results.csv")
+  #def writecsv(self):
+  #  SYS2csv.evaluate(os.path.join('/',self.outdir, "SYSout.txt"), self.outdir, "results.csv")
 
   def save_sisyphos_phil(self):
     _ = os.path.join(OV.DataDir(), "%s.phil" % p_scope)
