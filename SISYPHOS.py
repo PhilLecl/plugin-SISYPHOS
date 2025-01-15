@@ -6,9 +6,8 @@ import olex_core
 import olex
 import olx
 import math
-import re
 import shutil
-import gc #This is the garbage collector
+import gc 
 from return_WL_energy import ret_wl
 from PluginTools import PluginTools as PT
 try:
@@ -209,10 +208,17 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth(str(error))
         self.log_sth("Failed to extract cif stats!")
         pass
+
+      try:
+        disp_stats, disp_errs = self.extract_fp_fdps()
+        print("Refined disps:", disp_stats, disp_errs)
+        self.log_sth(f"Succesfully extracted disps: {disp_stats} with errors: {disp_errs}")
+      except Exception as error:
+        print(error)
+        self.log_sth(str(error))        
       
       try:
-        dist_stats,dist_errs,R1_all,R1_gt,wR2,disp_stats, disp_errs = self.extract_bonds_errors()
-        print("Refined disps:", disp_stats, disp_errs)
+        dist_stats,dist_errs,R1_all,R1_gt,wR2 = self.extract_bonds_errors()
       except Exception as error:
         print(error)
         print("Could not obtain cctbx object and calculate ESDs!\n")
@@ -221,7 +227,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         pass       
 
       with open(os.path.join(os.path.dirname(self.base_path),"SYSout.txt"), "a") as out:
-        out.write("\n+++++++++++++++++++\n")
+        out.write("+++++++++++++++++++\n")
         out.write(f"DATANAME:{self.name}\n")
         out.write("Stats-GetHklStat:\t")
         for key in stats:
@@ -259,15 +265,37 @@ class FAPJob:                                   # one FAPjob manages the refinem
           self.log_sth("Writing of distances failed!")
         out.write("\nWeight:"+str(OV.GetParam('sisyphos.update_weight')))
         out.write(f"\nNr. NPD:{olx.xf.au.NPDCount()}")
+      out.write("\n")
       self.log_sth(stats)
       self.log_sth(stats2)
       self.log_sth(stats3)
 
+    def extract_fp_fdps(self):
+      disp_stats = {}
+      disp_errs = {}
+
+      from refinement import FullMatrixRefine
+      # Even though never used we need this import since it initializes things we need later on
+      from olexex import OlexRefinementModel
+      from cctbx.array_family import flex
+      from scitbx import matrix
+      from cctbx.crystal import calculate_distances
+
+      fmr = FullMatrixRefine()
+      xs = fmr.xray_structure()
+      try:
+        for sc in xs.scatterers():
+          if sc.flags.grad_fp() or sc.flags.grad_fdp():
+            fp, fdp = sc.fp, sc.fdp
+            disp_stats[f"{sc.label}_anom"] = (fp, fdp)
+        return disp_stats,disp_errs
+      except:
+        self.log_sth("Extraction of DISP Values failed!")
+
+
     def extract_bonds_errors(self):
       dist_stats = {}
       dist_errs = {}
-      disp_stats = {}
-      disp_errs = {}
       R1_all = 0.0
       R1_gt = 0.0
       wR2 = 0.0
@@ -334,14 +362,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         bond = sl[d.i_seq]+"-"+sl[d.j_seq]
         dist_stats[bond] = distances.distances[i]
         dist_errs[bond] = math.sqrt(distances.variances[i])
-      try:
-        for sc in xs.scatterers():
-          if sc.flags.grad_fp() or sc.flags.grad_fdp():
-            fp, fdp = sc.fp, sc.fdp
-            disp_stats[f"{sc.label}_anom"] = (fp, fdp)
-        return dist_stats,dist_errs,R1_all,R1_gt,wR2,disp_stats, disp_errs 
-      except:
-        self.log_sth("Extraction of DISP Values failed!")
+      return dist_stats,dist_errs,R1_all,R1_gt,wR2
 
     def parse_cif(self, loc: str) -> dict:
       """Parses the cif given by loc and returns a dictionary of parsed information
