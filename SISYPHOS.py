@@ -386,22 +386,6 @@ class FAPJob:                                   # one FAPjob manages the refinem
         with open(loc, "r") as incif:
           switch2 = False
           for line in incif:
-#            if self.disp == True:
-#              for elem in self.elements:
-#                switch = True                
-#                if line.startswith(f" {elem} ") & switch:
-#                  switch = False
-#                  if " . . " in line:
-#                      continue
-#                  if "(" in line.split(" ")[3]:
-#                    print(line)
-#                    fp = (float(line.split(" ")[2].split("(")[0]), int(line.split(" ")[2].split("(")[1][:-1]))
-#                    fdp = (float(line.split(" ")[3].split("(")[0]), int(line.split(" ")[3].split("(")[1][:-1]))
-#                  else:
-#                    print(line)
-#                    fp = float(line.split(" ")[2])
-#                    fdp = float(line.split(" ")[3])
-#                  out[f"{elem}_anoms"] = (fp,fdp)
             if line.startswith("  _atom_site_refinement_flags_occupancy"):
               switch2 = True
               continue
@@ -489,12 +473,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
               continue
             if switch:
               if "REM  <" in line:
-                print(line)
                 continue
               switch = False
               continue
             temp_ins.append(line)
-          print(temp_ins)
         with open(self.final_ins_path, "w") as file:
             for line in temp_ins:
                 file.write(line)
@@ -962,7 +944,6 @@ class SISYPHOS(PT):
       shutil.copy(hkls_paths[key], new_dir)
       shutil.copy(self.solution_path, new_dir)
       poss_ins_path = hkls_paths[key].split(".")[0]+".ins"
-      print(poss_ins_path)
       if os.path.exists(poss_ins_path):
           shutil.copy(poss_ins_path, new_dir)
       return(FAPJob( 
@@ -1042,7 +1023,6 @@ class SISYPHOS(PT):
                   "pySCF_Damping"]
     for param in nos_params:
       self.nos2_dict[param] = OV.GetParam(f"snum.NoSpherA2.{param}")
-    print(self.nos2_dict)
 
   def print_formula(self) -> None:   
     """This one does the actual work
