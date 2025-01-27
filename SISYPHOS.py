@@ -268,7 +268,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
           self.log_sth("Writing of distances failed!")
         out.write("\nWeight:"+str(OV.GetParam('sisyphos.update_weight')))
         out.write(f"\nNr. NPD:{olx.xf.au.NPDCount()}")
-      out.write("\n")
+        out.write("\n")
       self.log_sth(stats)
       self.log_sth(stats2)
       self.log_sth(stats3)
