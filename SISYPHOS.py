@@ -203,7 +203,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         locat = os.path.join(self.base_path,f"{self.name}.cif")
         print(locat)
         stats2, disp_cif = self.parse_cif(locat)
-        self.log_sth(f"Extracted cif stats: {stats2} from {locat}")
+        self.log_sth(f"Extracted cif stats: {stats2} from {locat} and disps: {disp_cif}")
       except Exception as error:
         self.log_sth(str(error))
         self.log_sth("Failed to extract cif stats!")
@@ -243,9 +243,10 @@ class FAPJob:                                   # one FAPjob manages the refinem
           for key in self.nos2_dict:
             out.write(str(key) + ":" + str(self.nos2_dict[key]) + ";")
         if self.disp:
-          out.write("\nRefined Disps:\t")
+          out.write("\nRefined Disps from cif:\t")
           for key in disp_cif:
             out.write(str(key) + ":" + str(disp_cif[key]) + ";")
+          out.write("\nRefined Disps from xray structure:\t")
           for key in disp_stats:
             out.write(str(key) + ":" + str(disp_stats[key]) + ";")
         out.write("\nrefine_dict:\t")
@@ -422,6 +423,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 ueq = lin[6].split("(")[0]
                 ueq_delta = lin[6].split("(")[1][:-1]
                 out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
+        with open(loc, "r") as incif:
           if self.disp:
             switch3 = False
             for line in incif:

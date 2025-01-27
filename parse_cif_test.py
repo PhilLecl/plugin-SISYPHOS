@@ -56,5 +56,5 @@ def parse_cif(loc):
     
     return out, disp_dict
             
-df1,df2 = parse_cif("./D1-PPh3AuI-1_11880.cif")
+df1,df2 = parse_cif("./sucrose.cif")
 print(df1,df2)
