@@ -202,7 +202,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
       try:
         locat = os.path.join(self.base_path,f"{self.name}.cif")
         print(locat)
-        stats2 = self.parse_cif(locat)
+        stats2, disp_cif = self.parse_cif(locat)
         self.log_sth(f"Extracted cif stats: {stats2} from {locat}")
       except Exception as error:
         self.log_sth(str(error))
@@ -244,6 +244,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
             out.write(str(key) + ":" + str(self.nos2_dict[key]) + ";")
         if self.disp:
           out.write("\nRefined Disps:\t")
+          for key in disp_cif:
+            out.write(str(key) + ":" + str(disp_cif[key]) + ";")
           for key in disp_stats:
             out.write(str(key) + ":" + str(disp_stats[key]) + ";")
         out.write("\nrefine_dict:\t")
@@ -394,6 +396,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
                     "refine_ls_wR_factor_ref",
                     "REM Shift_max"]
       out = {}
+      disp_dict = {}
       try:
         with open(loc, "r") as incif:
             for line in incif:
@@ -419,12 +422,23 @@ class FAPJob:                                   # one FAPjob manages the refinem
                 ueq = lin[6].split("(")[0]
                 ueq_delta = lin[6].split("(")[1][:-1]
                 out[f"{atom}_ueq"] = (float(ueq), int(ueq_delta))
+          if self.disp:
+            switch3 = False
+            for line in incif:
+                  if switch3 and line in ["\n", "\r\n"]:
+                      switch3 = False
+                  if switch3:
+                      adr = line.split()
+                      print(adr)
+                      disp_dict[adr[0]] = (adr[1],adr[2])
+                  if line.startswith("  _atom_site_dispersion_imag"):
+                    switch3 = True
         self.log_sth("Extended cif extraction succesfull :)")
       except Exception as e:
         self.log_sth(f"Failed at line {line}")
         self.log_sth(str(e))
         self.log_sth("Extended cif extraction failed!")
-      return out
+      return out, disp_dict
 
     def get_elements(self) -> list:
       return [

@@ -24,6 +24,8 @@ corr_filts = ["exptl_absorpt_coefficient_mu",
 
 def parse_cif(loc):
     out = {}
+    disp_dict = {}
+
     with open(loc, "r") as incif:
         for line in incif:
             for i,filter in enumerate(corr_filts):
@@ -39,7 +41,20 @@ def parse_cif(loc):
                     print(line)
                     if " . . " in line:
                       continue
-    return out
+
+    with open(loc, "r") as incif:
+        switch3 = False
+        for line in incif:
+              if switch3 and line in ["\n", "\r\n"]:
+                  switch3 = False
+              if switch3:
+                  adr = line.split()
+                  print(adr)
+                  disp_dict[adr[0]] = (adr[1],adr[2])
+              if line.startswith("  _atom_site_dispersion_imag"):
+                  switch3 = True
+    
+    return out, disp_dict
             
-df1 = parse_cif("./pirEt_epsilon_11929_smart3_emp.cif")
-print(df1)
+df1,df2 = parse_cif("./D1-PPh3AuI-1_11880.cif")
+print(df1,df2)
