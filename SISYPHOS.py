@@ -145,6 +145,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         olex.m("refine 10")
         if self.nos2:
           if self.growed:
+            olex.x("hide $Q")
             olex.m("grow")
           olex.m("neutronhdist")
           self.log_sth("H atoms placed to neutron distances (NeutronHDist command)")
