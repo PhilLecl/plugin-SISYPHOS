@@ -11,10 +11,9 @@ import gc
 from return_WL_energy import ret_wl
 from PluginTools import PluginTools as PT
 try:
-  import SYStocsv as SYS2csv
   import matplotlib.pyplot as plt
 except:
-  print("No pandas or matplotlib found, evaluate not possible")
+  print("No matplotlib found, evaluate not possible")
 
 debug = bool(OV.GetParam("olex2.debug", False))
 
@@ -715,6 +714,7 @@ class SISYPHOS(PT):
         """
     hkls_paths = {}
     joblist = []
+    elements = []
     if self.perform_disp_ref:
       elements = self.elem_string.split(",")
     print(self.base_path)
@@ -1103,13 +1103,16 @@ class SISYPHOS(PT):
             del joblist[i-1]
             gc.collect()
         print(f"SISYPHOS run finished, results and log in {self.base_path}")
-        #try:
-        #  self.writecsv()
-        #except:
-        #  print("Something with the CSV generation did not work, are pandas and matplotlib installed? Output was generated anyways.")
+        try:
+          self.writecsv()
+        except:
+          print("Something with the CSV generation did not work, are pandas and matplotlib installed? Output was generated anyways.")
 
-  #def writecsv(self):
-  #  SYS2csv.evaluate(os.path.join('/',self.outdir, "SYSout.txt"), self.outdir, "results.csv")
+  def writecsv(self):
+    import SYStocsv as SYS2csv
+    loc = os.path.join('/',self.outdir, "SYSout.txt")
+    outloc = os.path.join('/',self.outdir)
+    SYS2csv.main(fr"{loc}", fr"{outloc}")
 
   def save_sisyphos_phil(self):
     _ = os.path.join(OV.DataDir(), "%s.phil" % p_scope)

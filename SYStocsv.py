@@ -1,4 +1,5 @@
 import csv
+import os
 
 def parse_block(block):
     """
@@ -35,7 +36,7 @@ def parse_block(block):
             record[key] = rest
     return record
 
-def main(inputloc):
+def main(inputloc, outputloc):
     """
     Generate a .csv file from a SYSout.txt output file from a SISYPHOS run.
     """
@@ -55,8 +56,8 @@ def main(inputloc):
     for rec in records:
         all_keys.update(rec.keys())
     all_keys = sorted(all_keys)  
-
-    with open("output.csv", "w", newline="") as csvfile:
+    out = os.path.join(outputloc, 'SYSoutput.csv')
+    with open(out, "w", newline="") as csvfile:
         writer = csv.DictWriter(csvfile, fieldnames=all_keys)
         writer.writeheader()
         for rec in records:
