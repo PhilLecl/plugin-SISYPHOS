@@ -145,7 +145,6 @@ class FAPJob:                                   # one FAPjob manages the refinem
         olex.m("refine 10")
         if self.nos2:
           if self.growed:
-            olex.x("hide $Q")
             olex.m("grow")
           olex.m("neutronhdist")
           self.log_sth("H atoms placed to neutron distances (NeutronHDist command)")
@@ -154,10 +153,9 @@ class FAPJob:                                   # one FAPjob manages the refinem
         counter = 0
         self.log_sth(f'Final Shift: {abs(OV.GetParam("snum.refinement.max_shift_over_esd"))}')
         olex.m("spy.set_refinement_program(olex2.refine, Gauss-Newton)")
-        olex.m("refine 20")
-        olex.m("refine 20")
+        olex.m("refine 12")
         while abs(OV.GetParam("snum.refinement.max_shift_over_esd")) > 0.005:
-          olex.m("refine 20")
+          olex.m("refine 12")
           counter += 1
           if counter > 15:
             self.log_sth("Did not converge after 15 LS cycles, aborting and reporting results.")
@@ -209,7 +207,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         self.log_sth(str(error))
         self.log_sth("Failed to extract cif stats!")
         pass
-
+      
       try:
         disp_stats, disp_errs = self.extract_fp_fdps()
         print("Refined disps:", disp_stats, disp_errs)
@@ -228,7 +226,7 @@ class FAPJob:                                   # one FAPjob manages the refinem
         pass       
 
       with open(os.path.join(os.path.dirname(self.base_path),"SYSout.txt"), "a") as out:
-        out.write("+++++++++++++++++++\n")
+        out.write("\n+++++++++++++++++++\n")
         out.write(f"DATANAME:{self.name}\n")
         out.write("Stats-GetHklStat:\t")
         for key in stats:
@@ -300,6 +298,8 @@ class FAPJob:                                   # one FAPjob manages the refinem
     def extract_bonds_errors(self):
       dist_stats = {}
       dist_errs = {}
+      disp_stats = {}
+      disp_errs = {}
       R1_all = 0.0
       R1_gt = 0.0
       wR2 = 0.0
@@ -755,7 +755,6 @@ class SISYPHOS(PT):
       energy_source = "solution"
 
     for hkl in hkls_paths:
-      #nos2_dict_cp = self.nos2_dict.copy()
       if self.perform_disp_ref:
             disp_sources = ["refined"]       
             if self.henke:
@@ -814,6 +813,8 @@ class SISYPHOS(PT):
     print(poss_ins_path)
     if os.path.exists(poss_ins_path):
       shutil.copy(poss_ins_path, new_dir)
+      if OV.IsEDData():
+        shutil.copy(hkls_paths[key].split(".")[0]+".cif_od", new_dir)
     hkls_paths[key] = new_dir
     return(FAPJob( 
                   base_path = new_dir, 
@@ -1054,7 +1055,7 @@ class SISYPHOS(PT):
                   "multiplicity", "full_HAR",
                   "Max_HAR_Cycles","becke_accuracy",
                   "Relativistic", "h_aniso", 
-                  "h_afix",
+                  "h_afix", "add_disp", 
                   "cluster_radius", "DIIS",
                   "cluster_grow", "ORCA_SCF_Conv",
                   "ORCA_SCF_Strategy", "ORCA_Solvation",

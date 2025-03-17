@@ -1,47 +1,67 @@
-import pandas as pd
-import sys
-import os
-from scipy import constants as conts
+import csv
 
-def ret_energy(wavelength):
-    return (conts.h * conts.c) / (wavelength*conts.e) / conts.angstrom
-
-def ret_wl(energy):
-    return (conts.h * conts.c) / (energy*conts.e) / conts.angstrom
-
-def main():
-    evaluate(sys.argv)
-
-def evaluate(loc, dir, outname=""):
-    with open(loc, "r") as inp:
-        print(f"Looking at {loc}")
-        df = pd.DataFrame()
-        blocks = []
-        buffer = []
-        for line in inp:
-            if line.startswith("++++"):
-                blocks.append(buffer)
-                buffer = []
+def parse_block(block):
+    """
+    Parse a single block of text into a dictionary.
+    The block is expected to contain lines with either a simple key:value pair or a composite field
+    where the value contains semicolon-separated sub key:value pairs.
+    """
+    record = {}
+    for line in block.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if ":" not in line:
+            continue
+        key, rest = line.split(":", 1)
+        key = key.strip()
+        rest = rest.strip()
+        if ";" in rest:
+            if rest == "":
+                record[key] = ""
             else:
-                buffer.append(line)
+                sub_pairs = rest.split(";")
+                for sub in sub_pairs:
+                    sub = sub.strip()
+                    if not sub:
+                        continue
+                    if ":" in sub:
+                        sub_key, sub_val = sub.split(":", 1)
+                        combined_key = sub_key.strip()
+                        record[combined_key] = sub_val.strip()
+                    else:
+                        continue
+        else:
+            record[key] = rest
+    return record
+
+def main(inputloc):
+    """
+    Generate a .csv file from a SYSout.txt output file from a SISYPHOS run.
+    """
+    with open(inputloc, "r") as infile:
+        content = infile.read()
+
+    blocks = content.split("+++++++++++++++++++")
+    records = []
     for block in blocks:
-        outdir = {}
-        for i in range(len(block)):
-            if "\t" in block[i]:
-                block[i] = block[i].split("\t")[1]
-                block[i] = block[i].strip("\n")
-        for elem in block:
-            for piece in elem.split(";"):
-                if ":" in piece:
-                    key, value = piece.split(":")
-                    outdir[key] = value
-                else:
-                    continue
-        df = df.append(outdir, ignore_index =True)
-    #df["Energy"] = ret_energy(df["wavelength"])
-    df.to_csv(os.path.join(dir,f"SYSout_{outname}.csv"))
+        block = block.strip()
+        if not block:
+            continue
+        record = parse_block(block)
+        records.append(record)
+
+    all_keys = set()
+    for rec in records:
+        all_keys.update(rec.keys())
+    all_keys = sorted(all_keys)  
+
+    with open("output.csv", "w", newline="") as csvfile:
+        writer = csv.DictWriter(csvfile, fieldnames=all_keys)
+        writer.writeheader()
+        for rec in records:
+            writer.writerow(rec)
 
 if __name__ == '__main__':
-    print("Loaded SYStocsv")
     main()
     

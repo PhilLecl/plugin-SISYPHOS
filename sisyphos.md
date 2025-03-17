@@ -23,6 +23,7 @@ Anomalous dispersion refinement (* Meurer et al., IUCrJ, 2022, 9
 
 ## Set working dir
 
+Hallo
 Here you can show the program the location of your measured data. SISYPHOS will look for any .hkl that is in any subfolder here, except for output folders of SISYPHOS.
 
 ## Set solution ins
