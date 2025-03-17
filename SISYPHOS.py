@@ -715,7 +715,8 @@ class SISYPHOS(PT):
         """
     hkls_paths = {}
     joblist = []
-    elements = self.elem_string.split(",")
+    if self.perform_disp_ref:
+      elements = self.elem_string.split(",")
     print(self.base_path)
 
     # Iterate through all files and directories in the source folder
