@@ -85,6 +85,10 @@ class BenchJob:
             log_file.write(out + "\n")
             log_file.flush()
             os.fsync(log_file.fileno())
+    
+    def write_log_header(self, out: str) -> None:
+        bar = "=" * 27
+        self.write_log(f"{bar} {out} {bar}")
 
     def configure_ORCA(self) -> None:
         olx.xf.EndUpdate()
@@ -104,9 +108,7 @@ class BenchJob:
         """Runs the refinement using predefined settings"""
         try:
             olex.m(f"reap {self.ins_file}")
-            self.write_log(
-                "=========================== Starting New Refinment ==========================="
-            )
+            self.write_log_header("Starting New Refinement")
             self.write_log(f"ID: {self.id}")
             self.write_log(f"Was able to load .ins: {self.ins_file}")
 
@@ -370,9 +372,7 @@ class BenchJob:
 
     def run(self) -> None:
         self.refine()
-        self.write_log(
-            "=========================== Finished Refinement ==========================="
-        )
+        self.write_log_header("Finished Refinement")
         done = True
         try:
             self.extract_info()
@@ -382,9 +382,7 @@ class BenchJob:
             done = False
 
         if done:
-            self.write_log(
-                "=========================== Extracted Information ==========================="
-            )
+            self.write_log("Extracted Information")
             # Write a empty file called done to the work path
             with open(os.path.join(self.work_path, "done"), "w") as _:
                 pass
