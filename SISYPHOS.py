@@ -3,6 +3,7 @@ import math
 import os
 import shutil
 import time
+from typing import List, Dict, Union
 
 import olex
 import olex_core
@@ -42,7 +43,7 @@ OV.SetVar("SISYPHOS_plugin_path", p_path)
 
 
 class BenchJob:
-    def __init__(self, base_work_path, id : int, use_nos2 = False, nos2_params:dict|None = None) -> None:
+    def __init__(self, base_work_path, id : int, use_nos2 = False, nos2_params:Union[Dict,None] = None) -> None:
         if nos2_params is None:
             use_nos2 = False
         
@@ -51,7 +52,7 @@ class BenchJob:
         self.use_nos2 = use_nos2
         self.nos2_params = nos2_params
         
-        self.work_path = os.path.join(self.base_work_path, str(self.id))
+        self.work_path = os.path.join(self.base_work_path, f"job_{self.id}")
         self.time_needed = 0.0
         self.cycles_needed = 0
   

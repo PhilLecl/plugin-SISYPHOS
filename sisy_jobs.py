@@ -7,6 +7,7 @@
 #When reading each line we split the line at the ; and then at the first(!): to get a dictionary of keyword: value pairs (We split at the first : to allow for keywords containing : e.g. File paths under windows)
 import os, glob
 from typing import List, Tuple, Dict
+import itertools as it
 
 class SisyphosBenchmarkFile:
     def __init__(self, location:str, options = None):
