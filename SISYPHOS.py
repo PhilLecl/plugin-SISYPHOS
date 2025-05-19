@@ -69,7 +69,7 @@ class BenchJob:
         self.cycles_needed = 0
 
     def __str__(self) -> str:
-        res = f"Job with following options:\n"
+        res = "Job with following options:\n"
         for key in self.nos2_params:
             res += f"{key}:{self.nos2_params[key]}|"
         return res
@@ -117,7 +117,7 @@ class BenchJob:
             olex.m("fix disp -c")
 
             # Check if a weightening scheme should be used
-            if OV.GetParam("sisyphos.update_weight") == True:
+            if OV.GetParam("sisyphos.update_weight"):
                 OV.SetParam("snum.refinement.update_weight", True)
                 self.write_log("Refining the weighting scheme")
             else:
@@ -243,7 +243,6 @@ class BenchJob:
         except Exception as error:
             self.write_log(str(error))
             self.write_log("Failed to extract Cell stats.")
-            pass
 
         hkl_stats = olex_core.GetHklStat()
 
@@ -253,7 +252,6 @@ class BenchJob:
         except Exception as error:
             self.write_log(str(error))
             self.write_log("Failed to extract cif stats!")
-            pass
 
         dist_stats = {}
         dist_errs = {}
@@ -334,7 +332,6 @@ class BenchJob:
             print("Could not obtain cctbx object and calculate ESDs!\n")
             self.write_log(str(error))
             self.write_log("Failed to extract distances")
-            pass
 
         # Write the results to a file
         with open(
@@ -343,33 +340,31 @@ class BenchJob:
             out.write("NoSpherA2_Dict:\n")
             if self.use_nos2:
                 for key in self.nos2_params:
-                    out.write(str(key) + ":" + str(self.nos2_params[key]) + ",")
+                    out.write(f"{key}:{self.nos2_params[key]},")
 
             out.write("\nStats-GetHklStat:\n")
             for key in hkl_stats:
-                out.write(str(key) + ":" + str(hkl_stats[key]) + ",")
+                out.write(f"{key}:{hkl_stats[key]},")
             out.write("\nCell-Stats:\n")
             for key in cell_stats:
-                out.write(str(key) + ":" + str(cell_stats[key]) + ",")
+                out.write(f"{key}:{cell_stats[key]},")
             out.write("\nCIF-stats:\n")
             for key in cif_stats:
-                out.write(str(key) + ":" + str(cif_stats[key]) + ",")
+                out.write(f"{key}:{cif_stats[key]},")
             out.write("\nrefine_dict:\n")
             for key in self.refine_results:
-                res = str(OV.GetParam("snum.refinement." + key))
-                out.write(
-                    str(key) + ":" + str(OV.GetParam("snum.refinement." + key)) + ","
-                )
+                res = OV.GetParam(f"snum.refinement.{key}")
+                out.write(f"{key}:{res},")
             out.write(
                 f"R1_all:{R1_all},R1_gt:{R1_gt},wR2:{wR2},cycles:{self.cycles_needed},time:{self.time_needed},"
             )
             out.write("\nbondlengths:\n")
             for key in dist_stats:
-                out.write(str(key) + ":" + str(dist_stats[key]) + ",")
+                out.write(f"{key}:{dist_stats[key]},")
             out.write("\nbonderrors:\n")
             for key in dist_stats:
-                out.write(str(key) + ":" + str(dist_errs[key]) + ",")
-            out.write("\nWeight:" + str(OV.GetParam("sisyphos.update_weight")))
+                out.write(f"{key}:{dist_errs[key]},")
+            out.write(f"\nWeight:{OV.GetParam("sisyphos.update_weight")}")
             out.write(f"\nNr. NPD:{olx.xf.au.NPDCount()}")
             out.write("\n+++++++++++++++++++\n")
 
