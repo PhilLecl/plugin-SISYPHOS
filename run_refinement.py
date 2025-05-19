@@ -7,10 +7,12 @@ import itertools as it
 
 
 #GLOBAL CONFIGURATION OF SISIPHOS!
-ncpus = 20
+ncpus = 16
+cpus_per_job = 4
+
 
 OPTIONS = {
-    "basis_name":["def2-SVP", "def2-TZVP", "def2-QZVP"],
+    "basis_name":["def2-SVP", "def2-TZVP"],
     "method":["r2SCAN"],
     "charge":["0"],
     "multiplicity":["0"],
@@ -22,13 +24,13 @@ OPTIONS = {
     "ORCA_Solvation":["Water"],
     "NoSpherA2_RI_FIT":["True", "False"],
     "auxiliary_basis":["auto_aux"],
-    "auto_aux_beta":["1.5", "1.7", "2.0", "2.5"],
+    "auto_aux_beta":["1.5", "2.0"],
     "selected_salted_model": [r"D:\Models\Combo_v1",r"D:\Models\Combo_v2",r"D:\Models\Combo_v3",r"D:\Models\Combo_v4",r"D:\Models\Combo_v5", r"D:\Models\Combo_v6"]
 }
 
 
-def write_sisy_file(work_dir:str ,filename: str) -> int:
-    permutations = []
+def write_sisy_file(work_dir:str , filename: str) -> int:
+    permutations = [{"IAM":"True"}]
     #As SALTED does not rely on ORCA calculation, throw out everything that is not needed
     if OPTIONS["selected_salted_model"]:
         for model in OPTIONS["selected_salted_model"]:
@@ -69,14 +71,13 @@ def write_sisy_file(work_dir:str ,filename: str) -> int:
 
 def execute_olex2c( olex_exe: str, 
                     jobdir: str,
-                    job_idx: Tuple[int,int]) -> None:
-    os.environ["ncpus"]=str(1)
+                    job_idx: int) -> None:
     my_env = os.environ.copy()
     my_env['PYTHONHOME'] = os.path.join(os.path.dirname(os.path.abspath(__file__)),"Python38")
     my_env['PYTHONPATH'] = os.path.join(my_env['PYTHONHOME'],"Lib")
-    my_env['SISYPHOS_start_idx'] = str(job_idx[0])
-    my_env['SISYPHOS_end_idx'] = str(job_idx[1])
-    with open(os.path.join(jobdir, f'output_{os.getpid()}.txt'), 'w') as f:
+    my_env['SISYPHOS_job_idx'] = str(job_idx)
+
+    with open(os.path.join(jobdir, f'output_{job_idx}.log'), 'w') as f:
         f.write(os.path.dirname(os.path.abspath(__file__)))
         try:
             process = subprocess.Popen( args=[olex_exe, "sisyphos"], 
@@ -95,9 +96,9 @@ def execute_olex2c( olex_exe: str,
             f.write(f"Error in execute_olex2c: {e}")
     
     # The outfile is written in different encodings, this is a workaround to fix it
-    with open(os.path.join(jobdir, f'output_{os.getpid()}.txt'), 'rb') as f:
+    with open(os.path.join(jobdir, f'output_{job_idx}.log'), 'rb') as f:
         data = f.read().replace(b"\x00", b"").decode('utf-16LE', errors='replace')
-    with open(os.path.join(jobdir, f'output_{os.getpid()}.txt'), 'w', encoding='utf-16le') as f:
+    with open(os.path.join(jobdir, f'output_{job_idx}.log'), 'w', encoding='utf-16le') as f:
         f.write(data)
 
 def execute_olex2c_wrapper(args):
@@ -134,23 +135,7 @@ if __name__ == '__main__':
                 if line.startswith("#") or line == "\n": continue
                 n_jobs += 1
 
-    # Compute the start and end indices for each worker depending on the number of jobs and ncpus
-    job_indices = []
-    start = 0
-    for i in range(ncpus):
-        end = start + n_jobs // ncpus + (1 if i < n_jobs % ncpus else 0)
-        # If the start and end indices are the same, break the loop
-        # This means that there are no more jobs to assign
-        if start == end: break
-        
-        job_indices.append((start, end))
-        start = end
-    
-    print(f"Number of jobs: {n_jobs}")
-    print(f"Number of workers: {ncpus}")
-    print(f"Job indices: {job_indices}")
-        
-    
+
     exe = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'olexsys-olex2c.exe')
 
     os.environ['OLEX2_CCTBX_DIR'] = os.path.join(os.path.abspath(__file__), 'cctbx')
@@ -162,20 +147,18 @@ if __name__ == '__main__':
     os.environ["SISYPHOS_work_path"] = work_dir
     # #creating a methodfile list and file
     
+    
+    n_workers = ncpus // cpus_per_job
+    os.environ["ncpus"]= str(cpus_per_job)
+    
+    print("Number of jobs: ", n_jobs)
+    print("Number of workers: ", n_workers)
+    print("Number of cpus per job: ", cpus_per_job)
     # Create a list of arguments for each call to execute_olex2c
-    args_list = [(exe, work_dir, indexes) for indexes in job_indices]  
+    args_list = [(exe, work_dir, indexes) for indexes in range(n_jobs)]  
     # # Create a multiprocessing Pool with ncpus workers
-    with multiprocessing.Pool(ncpus) as pool:
+    with multiprocessing.Pool(n_workers) as pool:
         # Use the pool to map execute_olex2c to the args_list
         pool.map(execute_olex2c_wrapper, args_list)
 
-    # Combine all output and result files into one each
-    for file_name in ["log", "output", "results"]:
-        files = glob.glob(os.path.join(work_dir, f"{file_name}_*.txt"))
-        with open(os.path.join(work_dir, f"{file_name}.txt"), 'w') as outfile:
-            for fname in files:
-                with open(fname) as infile:
-                    outfile.write(infile.read())
-                os.remove(fname)
-        
     print("Done.")

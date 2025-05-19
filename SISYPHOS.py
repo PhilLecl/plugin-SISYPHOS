@@ -10,6 +10,8 @@ import time
 
 from PluginTools import PluginTools as PT
 
+from sisy_jobs import SisyphosBenchmarkFile
+
 debug = bool(OV.GetParam("olex2.debug", False))
 
 
@@ -38,28 +40,20 @@ p_scope = d['p_scope']
 OV.SetVar('SISYPHOS_plugin_path', p_path)
 
 class BenchJob:
-	def __init__(self, base_work_path, id, use_nos2 = False, nos2_params:dict = None, already_done:bool = False) -> None:
+	def __init__(self, base_work_path, id, use_nos2 = False, nos2_params:dict = None) -> None:
 		if nos2_params is None:
 			use_nos2 = False
 		
-		self.already_done = already_done
 		self.base_work_path = base_work_path
 		self.id = id
 		self.use_nos2 = use_nos2
 		self.nos2_params = nos2_params
 		
-		self.refine_results = {
-				"max_peak"  : 0.0,
-				"max_hole"  : 0.0,
-				"res_rms"   : 0.0,
-				"goof"      : 0.0,
-				"max_shift_over_esd" : 0.0,
-				"hooft_str" : 0.0
-			}
 		self.work_path = os.path.join(self.base_work_path, str(self.id))
-		self.ins_file = glob.glob(os.path.join(self.work_path, "*.ins"))[0]
 		self.time_needed = 0.0
 		self.cycles_needed = 0
+  
+		self.setup_workspace()
 
 		
 	def __str__(self) -> str:
@@ -71,11 +65,24 @@ class BenchJob:
 	def __repr__(self) -> str:
 		return f'<FAPJob Object {self.id}>'
 
-
+	def setup_workspace(self) -> None:
+		""" Sets up the workspace for the job
+		"""
+		if not os.path.exists(self.work_path):
+			os.makedirs(self.work_path)
+		else:
+			shutil.rmtree(self.work_path)
+			os.makedirs(self.work_path)
+		
+		data_dir = os.path.dirname(self.base_work_path)
+		shutil.copy(glob.glob(os.path.join(data_dir, "*.hkl"))[0], self.work_path)
+		shutil.copy(glob.glob(os.path.join(data_dir, "*.ins"))[0], self.work_path)
+		self.ins_file = glob.glob(os.path.join(self.work_path, "*.ins"))[0]
+  		
 	def write_log(self, out:str) -> None:
 		""" Writes a log file to the work path
 		"""
-		with open(os.path.join(self.base_work_path, f"log_{os.getpid()}.txt"), "a") as log_file:
+		with open(os.path.join(self.work_path, f"out.log"), "a") as log_file:
 			log_file.write(out + "\n")
 			log_file.flush()
 			os.fsync(log_file.fileno())
@@ -322,7 +329,7 @@ class BenchJob:
 			pass
 		
 		#Write the results to a file
-		with open(os.path.join(self.base_work_path,f"results_{os.getpid()}.txt"), "a") as out:
+		with open(os.path.join(self.work_path,f"results.txt"), "a") as out:
 			out.write("NoSpherA2_Dict:\n")
 			if self.use_nos2:
 				for key in self.nos2_params:
@@ -338,8 +345,7 @@ class BenchJob:
 			for key in cif_stats:
 				out.write(str(key) + ":" + str(cif_stats[key]) + ",")
 			out.write("\nrefine_dict:\n")
-			for key in self.refine_results:
-				res = str(OV.GetParam("snum.refinement."+key))
+			for key in ["max_peak", "max_hole", "res_rms", "goof", "max_shift_over_esd", "hooft_str"]:
 				out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ",")
 			out.write("R1_all:" + str(R1_all) + ",R1_gt:" + str(R1_gt) + ",wR2:" + str(wR2) + ",cycles:"+ str(self.cycles_needed) + ",time:" + str(self.time_needed) + ",")
 			out.write("\nbondlengths:\n")
@@ -407,19 +413,15 @@ class SISYPHOS(PT):
 		self.base_path = os.getenv("SISYPHOS_base_path")
 		self.work_path = os.getenv("SISYPHOS_work_path")
 		
-		
-		self.sisy_start_idx = os.getenv("SISYPHOS_start_idx")
-		self.sisy_end_idx = os.getenv("SISYPHOS_end_idx")
-		if (self.sisy_start_idx is None) or (self.sisy_end_idx is None):
-			self.sisy_start_idx = 0
-			self.sisy_end_idx = 1000000 
+		#Get the index of the job to be processed, if not set, use -1 to indicate that all jobs should be processed
+		self.sisy_job_idx = os.getenv("SISYPHOS_job_idx")
+		if (self.sisy_job_idx is None):
+			self.sisy_job_idx = -1
 		else:
-			self.sisy_start_idx = int(self.sisy_start_idx)
-			self.sisy_end_idx = int(self.sisy_end_idx)
+			self.sisy_job_idx = int(self.sisy_job_idx)
+   
 		self.nos2_options = {}
 		self.use_nosphera2 = False
-		
-		
 		
 	def setBasePath(self) -> None:
 		"""Select Directory of the hkl and ins file which should be processed.
@@ -441,7 +443,6 @@ class SISYPHOS(PT):
 			print(f"Your data lies at:\n{out}")
 		OV.SetParam('sisyphos.base_path', out)  
 		
-
 	def setWorkPath(self) -> None:
 		"""Choose the directory where the benchmark jobs should be saved. This directory should also contain the benchmark file.
 
@@ -458,7 +459,7 @@ class SISYPHOS(PT):
 				self.work_path = out
 				print(f"Your benchmark data lies at:\n{out}")
 		OV.SetParam('sisyphos.work_path', out)
-	
+ 
 	def init_sisy_jobs(self) -> list:
 		"""Reads the job file and creates a list of FAPJob objects.
 
@@ -468,44 +469,34 @@ class SISYPHOS(PT):
 				Returns:
 						list: List of FAPJob objects
 				"""
-		sisy_file = glob.glob(os.path.join(self.work_path, "*.sisy"))[0]
+		sisy_jobs = SisyphosBenchmarkFile(self.work_path)
+		tmp_job_dict = self.nos2_options.copy()
+  
+		#Check if only one job is specified (happens mostly when running in headless mode)
+		if self.sisy_job_idx != -1:#
+			if sisy_jobs.is_finished(self.sisy_job_idx):
+				print(f"Job {self.sisy_job_idx} already finished, skipping")
+				return []
+			tmp_job_dict.update(sisy_jobs[self.sisy_job_idx])
+			#Check if a IAM job should be performed
+			if "IAM" in tmp_job_dict:
+				return [BenchJob(self.work_path, self.sisy_job_idx)]
+			return [BenchJob(self.work_path, self.sisy_job_idx, self.use_nosphera2, tmp_job_dict)]
 
 
 		job_list = []
-		with open(sisy_file, "r") as job_file:
-			job_id = 0
-			for line in job_file:
-				#Skip empty lines and comments
-				if line.startswith("#") or (line == "\n"): continue
-
-				if (job_id < self.sisy_start_idx):
-					job_id += 1
-					continue
-
-				#Create new folder and copy the .ins and .hkl files
-				#Check if the work path exists, if not create it
-				new_folder = os.path.join(self.work_path, str(job_id))
-				print(f"Creating folder {new_folder}")
-				print(f"base path: {self.base_path}")
-				print(f"JOB_ID: {job_id}")
-				if not os.path.exists(new_folder):
-					os.mkdir(new_folder)
-     
-					shutil.copy(glob.glob(os.path.join(self.base_path, "*.hkl"))[0], new_folder)
-					shutil.copy(glob.glob(os.path.join(self.base_path, "*.ins"))[0], new_folder)
-				else:
-					print(f"Folder {new_folder} already exists, skipping copy.")
-
-				line = line.replace("\n","").replace(" ","")
-				print(line)
-				#Create a new job with the given options, zicke zacke 
-				options = line.split(";")
-				tmp_job_dict = self.nos2_options.copy()
-				tmp_job_dict.update({opt:val for opt,val in [option.split(":", maxsplit=1) for option in options]})
-				job_list.append(BenchJob(self.work_path, job_id, self.use_nosphera2, tmp_job_dict))
-				job_id += 1
+		for i, job in enumerate(sisy_jobs):
+			if sisy_jobs.is_finished(i):
+				print(f"Job {i} already finished, skipping")
+				continue
     
-				if (job_id >= self.sisy_end_idx): break
+			tmp_job_dict.update(job)
+   
+			if "IAM" in tmp_job_dict:
+				job_list.append(BenchJob(self.work_path, self.sisy_job_idx))
+			else:
+				job_list.append(BenchJob(self.work_path, i, self.use_nosphera2, tmp_job_dict))
+   
 		return job_list
 
 	def run(self) -> None:
@@ -526,11 +517,10 @@ class SISYPHOS(PT):
 		self.nos2_options["Max_HAR_Cycles"] = 15
 		
 		job_list = self.init_sisy_jobs()
-		print(f"Starting index: {self.sisy_start_idx}")
-		print(f"Ending index: {self.sisy_end_idx}")
-		for job in job_list:
-			job.run()
 
+		for job in job_list:
+			print(f"--------------------------Running job {job.id}-----------------------------")
+			job.run()
 
 
 SISYPHOS_instance = SISYPHOS()
