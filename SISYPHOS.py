@@ -98,12 +98,16 @@ class BenchJob:
         olx.xf.EndUpdate()
         if OV.HasGUI():
             olx.Refresh()
-        OV.SetParam("snum.NoSpherA2.use_aspherical", True)
+                    
+        #ORCA has to be over here, to allow SALTED to replace ORCA as refinement engine
         OV.SetParam("snum.NoSpherA2.source", "ORCA 6.0")
-        OV.SetParam("snum.NoSpherA2.precise_output", True)
         for key in self.nos2_params:
             OV.SetParam(f"snum.NoSpherA2.{key}", f"{self.nos2_params[key]}")
             self.write_log(f"{key}: {OV.GetParam(f'snum.NoSpherA2.{key}')}")
+            
+        OV.SetParam("snum.NoSpherA2.precise_output", True)
+        OV.SetParam("snum.NoSpherA2.use_aspherical", True)
+        OV.SetParam('snum.NoSpherA2.h_aniso', True)
         if OV.GetParam("snum.NoSpherA2.multiplicity") == "0":
             self.write_log("I wil set a Multiplicity of 1, since none selected")
             OV.SetParam("snum.NoSpherA2.multiplicity", "1")
