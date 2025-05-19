@@ -21,7 +21,7 @@ except:
     from_outside = True
     p_path = os.path.dirname(os.path.abspath("__file__"))
 
-l = open(os.sep.join([p_path, "def.txt"])).readlines()
+l = open(os.path.join(p_path, "def.txt")).readlines()
 d = {}
 for line in l:
     line = line.strip()
