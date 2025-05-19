@@ -105,7 +105,7 @@ class BenchJob:
 		""" Runs the refinement using predefined settings
 		"""
 		try:
-			olex.m(f"reap {self.ins_file}")
+			olex.m(f"reap '{self.ins_file}'")
 			self.write_log("=========================== Starting New Refinment ===========================")
 			self.write_log(f"ID: {self.id}")
 			self.write_log(f"Was able to load .ins: {self.ins_file}")
