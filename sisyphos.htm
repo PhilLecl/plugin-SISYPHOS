@@ -9,302 +9,52 @@
     for the read-in energy values derived from your measurement folders.
     Good luck!
 </td>
-
-
 <!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
+
+
 <!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=Inputs; help_ext=Inputs;1; -->
-
-
-$+
-html.Snippet(GetVar(default_link),
-"value=DIR",
-"name=DEFBTN_SIS_DIR",
-"scope=#scope",
-"onclick=spy.SISYPHOS.setBasePath()",
-"bgcolor=GetVar(gui.blue)",
-"fgcolor=#ffffff",
-)
-$-
-
-<td ALIGN='left' width='35%'>
-    $+
-    html.Snippet("gui/snippets/input-text",
-    "name=SIS_DIR",
-    "value=spy.GetParam('sisyphos.gui.working_dir')",
-    "onchange=spy.SetParam('sisyphos.gui.working_dir',html.GetValue(~name~))",
-    "readonly=false")
-    $-
+<td ALIGN='left' width='33%'>
+    <b><a href="spy.SISYPHOS.setBasePath()">Set Base dir</a>
 </td>
-
-$+
-html.Snippet(GetVar(default_link),
-"value=.ins",
-"name=DEFBTN_SIS_INS",
-"scope=#scope",
-"onclick=spy.SISYPHOS.setSolutionPath()",
-"bgcolor=GetVar(gui.blue)",
-"fgcolor=#ffffff",
-)
-$-
-
-<td ALIGN='center' width='35%'>
-    $+
-    html.Snippet("gui/snippets/input-text",
-    "name=SIS_INS",
-    "value=spy.GetParam('sisyphos.gui.solution_ins')",
-    "onchange=spy.SetParam('sisyphos.gui.solution_ins',html.GetValue(~name~))",
-    "readonly=false")
-    $-
+<td ALIGN='center' width='33%'>
+    <b><a href="spy.SISYPHOS.setWorkPath()">Set working dir</a>
 </td>
-
-$+
-html.Snippet(GetVar(default_link),
-"value=STOP",
-"name=DEFBTN_GO",
-"scope=#scope",
-"onclick=spy.SISYPHOS.write_stop_file()",
-"bgcolor=GetVar(gui.red)",
-"fgcolor=#ffffff",
-)
-$-
-
-<!-- #ignoreif not spy.GetParam('sisyphos.benchmark_mode')
-<td ALIGN='right' width='34%'>
-  <b><a href="spy.SISYPHOS.setBenchmarkFile()">Set benchmark file</a>
-</td>
-#ignoreif -->
-
-<!-- #ignoreif not spy.GetParam('sisyphos.perform_disp_ref')
 <!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
-<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name='Elements';help_ext=Elements;1 -->
-<td width='23%'>
-    <b>%Elements%:</b>
-</td>
 
-<td width='40%' align='left'>
-    $+
-    html.Snippet("gui/snippets/input-text",
-    "name=element_string",
-    "width=100%",
-    "value=spy.GetParam('sisyphos.element_string')",
-    "onchange=spy.SetParam('sisyphos.element_string', html.GetValue('~name~'))")
-    $-
-</td>
-
-<td width='2%' align="right">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Individual DISP",
-    "label=Individual DISP",
-    "checked=spy.GetParam('sisyphos.indiv_disp')",
-    "oncheck=spy.SetParam('sisyphos.indiv_disp','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.indiv_disp','False')>>html.Update()"
-    )
-    $-
-</td>
-
-#ignoreif -->
-<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
-<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=SISYPHOS_2;help_ext=Adjustment;1 -->
-<td width='23%'>
-    <b>%Adjustment / eV%:</b>
-</td>
-<td align='left'>
-    $+
-    html.Snippet("gui/snippets/input-text",
-    "name=adjustment_eV",
-    "width=100%",
-    "value=spy.GetParam('sisyphos.adjustment_eV')",
-    "onchange=spy.SetParam('sisyphos.adjustment_eV', html.GetValue('~name~'))")
-    $-
-</td>
-<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
-
-<!-- #include tool-row-help gui\blocks\tool-row-help.htm;name=SISYPHOS_2;help_ext=Resolution;1 -->
-<td width='23%'>
-    <b>%Resolution / Angstroms%:</b>
-</td>
-<td align='left'>
-    $+
-    html.Snippet("gui/snippets/input-text",
-    "name=adjustment",
-    "width=100%",
-    "value=spy.GetParam('sisyphos.resulution')",
-    "onchange=spy.SetParam('sisyphos.resolution', html.GetValue('~name~'))")
-    $-
-</td>
-<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
 
 <!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=Modes; help_ext=Modes;1; -->
 <td ALIGN='left' width='21%'>
-    <b>Mode options</b>
-    <br>
+  <b>Mode options</b>
+  <br>
 </td>
 
 <td width='2%' align="left">
-    $+
+  $+
     html.Snippet("gui/snippets/input-checkbox-td",
     "name=Use NoSpherA2",
     "label=Use NoSpherA2",
     "checked=spy.GetParam('sisyphos.use_nos2')",
-    "oncheck=spy.SetParam('sisyphos.use_nos2','True')>>spy.SetParam('snum.NoSpherA2.Calculate',
-    'True')>>spy.SetParam('snum.NoSpherA2.source','ORCA 5.0')>>html.Update()",
+    "oncheck=spy.SetParam('sisyphos.use_nos2','True')>>spy.SetParam('snum.NoSpherA2.Calculate', 'True')>>spy.SetParam('snum.NoSpherA2.source','ORCA 5.0')>>html.Update()",
     "bgcolor=GetVar(HtmlTableRowBgColour)",
     "onuncheck=spy.SetParam('sisyphos.use_nos2','False')>>html.Update()"
     )
-    $-
-</td>
-<td width='2%' align="left">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Benchmark Mode",
-    "label=Benchmark Mode",
-    "checked=spy.GetParam('sisyphos.benchmark_mode')",
-    "oncheck=spy.SetParam('sisyphos.benchmark_mode','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.benchmark_mode','False')>>html.Update()"
-    )
-    $-
-</td>
-<td width='2%' align="left">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=DISP Refinement",
-    "label=DISP Refinement",
-    "checked=spy.GetParam('sisyphos.perform_disp_ref')",
-    "oncheck=spy.SetParam('sisyphos.perform_disp_ref','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.perform_disp_ref','False')>>html.Update()"
-    )
-    $-
-</td>
-<td width='2%' align="left">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Update Weight",
-    "label=Update Weight",
-    "checked=spy.GetParam('sisyphos.update_weight')",
-    "oncheck=spy.SetParam('sisyphos.update_weight','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.update_weight','False')>>html.Update()"
-    )
-    $-
-</td>
-<td width='2%' align="left">
-  $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Struct only",
-    "label=Struct only",
-    "checked=spy.GetParam('sisyphos.struct_only')",
-    "oncheck=spy.SetParam('sisyphos.struct_only','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.struct_only','False')>>html.Update()"
-    )
   $-
 </td>
-
 <!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
 
 <!-- #ignoreif not spy.GetParam('sisyphos.use_nos2')
 <!-- #include h3-refine_NoSpherA2SISYPHOS $GetVar(SISYPHOS_plugin_path)\..\..\NoSpherA2\h3-refine_NoSpherA2-extras.htm;gui\blocks\tool-h3-off.htm;image=h3-Refine_NoSpherA2;onclick=;colspan=1;2; -->
 #ignoreif -->
 
-
-<!-- #ignoreif not spy.GetParam('sisyphos.perform_disp_ref')
 <!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
-<td width='2%' align="left">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Refined DISPs",
-    "label=Refined DISPs",
-    "checked=spy.GetParam('sisyphos.refine_disps')",
-    "oncheck=spy.SetParam('sisyphos.refine_disps','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.refine_disps','False')>>html.Update()"
-    )
-    $-
-</td>
-<td width='2%' align="left">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Henke",
-    "label=Henke",
-    "checked=spy.GetParam('sisyphos.henke')",
-    "oncheck=spy.SetParam('sisyphos.henke','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.henke','False')>>html.Update()"
-    )
-    $-
-</td>
-<td width='2%' align="left">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Sasaki",
-    "label=Sasaki",
-    "checked=spy.GetParam('sisyphos.sasaki')",
-    "oncheck=spy.SetParam('sisyphos.sasaki','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.sasaki','False')>>html.Update()"
-    )
-    $-
-</td>
-<td width='2%' align="left">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Brennan",
-    "label=Brennan",
-    "checked=spy.GetParam('sisyphos.brennan')",
-    "oncheck=spy.SetParam('sisyphos.brennan','True')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.brennan','False')>>html.Update()"
-    )
-    $-
-</td>
-<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
-#ignoreif -->
-
-
-<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=Energy_and_wavelength_sources;1; -->
-<td width='2%' align="center">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Extract energies from file names",
-    "label=Extract energies from file names",
-    "checked=spy.GetParam('sisyphos.energies_from_headers')",
-    "oncheck=spy.SetParam('sisyphos.energies_from_headers','True')>>spy.SetParam('sisyphos.energies_from_ins','False')>>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.energies_from_headers','False')>>html.Update()"
-    )
-    $-
-</td>
-<td width='2%' align="center">
-    $+
-    html.Snippet("gui/snippets/input-checkbox-td",
-    "name=Extract energies from .ins",
-    "label=Extract energies from .ins",
-    "checked=spy.GetParam('sisyphos.energies_from_ins')",
-    "oncheck=spy.SetParam('sisyphos.energies_from_headers','False')>>spy.SetParam('sisyphos.energies_from_ins','True')
-    >>html.Update()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "onuncheck=spy.SetParam('sisyphos.energies_from_ins','False')>>html.Update()"
-    )
-    $-
-</td>
-If ticked, files must be of "NAME_ENERGY type" and every .hkl file MUST be accompanied by a .ins file with the same name
-<!-- #include row_table_off gui\blocks\row_table_off.htm;1; -->
-
-
-
-<!-- #include tool-row-help gui/blocks/tool-row-help.htm;name=SISYPHOS_2; help_ext=SISYPHOS_2;1; -->
-    $+  
-    html.Snippet("gui/snippets/gui-link-button",
-    "value='Start'",
-    "onclick=spy.SISYPHOS.print_formula()",
-    "bgcolor=GetVar(HtmlTableRowBgColour)",
-    "td1=<td width="29%" align='center'>
-    ",)
-    $-
+$+
+  html.Snippet("gui/snippets/gui-link-button",
+  "value='Start'",
+  "onclick=spy.SISYPHOS.run()",
+  "bgcolor=GetVar(HtmlTableRowBgColour)",
+  "td1=<td width="29%" align='center'>
+  ",)
+$-
 
 <!-- #include row_table_off gui/blocks/row_table_off.htm;1; -->
 

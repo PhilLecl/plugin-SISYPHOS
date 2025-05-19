@@ -1,6 +1,6 @@
 # Welcome to SISYPHOS
 
-`<font color='red'>`**THIS MODULE IS IN DEVELOPMENT, ATM YOU CANNOT STOP A RUNNING PROCEDURE OTHER THAN KILLING OLEX2**`</font>`
+`<font color='red'>`**THIS MODULE IS IN DEVELOPMENT, ATM YOU CANNOT STOP A RUNNING PROCEDURE OTHER THAN KILLING OLEX2** `</font>`
 `<br>`
 `<br>`
 
@@ -23,7 +23,6 @@ Anomalous dispersion refinement (* Meurer et al., IUCrJ, 2022, 9
 
 ## Set working dir
 
-Hallo
 Here you can show the program the location of your measured data. SISYPHOS will look for any .hkl that is in any subfolder here, except for output folders of SISYPHOS.
 
 ## Set solution ins
