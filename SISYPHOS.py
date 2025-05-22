@@ -60,8 +60,11 @@ class BenchJob:
 
     def __str__(self) -> str:
         res = "Job with following options:\n"
-        for key in self.nos2_params:
-            res += f"{key}:{self.nos2_params[key]}|"
+        if self.nos2_params is None:
+            res += "IAM Job\n"
+        else:
+            for key in self.nos2_params:
+                res += f"{key}:{self.nos2_params[key]}|"
         return res
 
     def __repr__(self) -> str:
@@ -104,7 +107,8 @@ class BenchJob:
         for key in self.nos2_params:
             OV.SetParam(f"snum.NoSpherA2.{key}", f"{self.nos2_params[key]}")
             self.write_log(f"{key}: {OV.GetParam(f'snum.NoSpherA2.{key}')}")
-            
+        
+        OV.SetParam('snum.NoSpherA2.Calculate',True)
         OV.SetParam("snum.NoSpherA2.precise_output", True)
         OV.SetParam("snum.NoSpherA2.use_aspherical", True)
         OV.SetParam('snum.NoSpherA2.h_aniso', True)
