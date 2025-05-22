@@ -1,7 +1,9 @@
-import pandas as pd
-import os, glob
+import glob
+import os
 
-#results.txt looks like this (without the #):
+import pandas as pd
+
+# results.txt looks like this (without the #):
 # NoSpherA2_Dict:
 # basis_name:def2-TZVP,method:r2SCAN,ncpus:4,mem:2,charge:0,multiplicity:0,full_HAR:True,Max_HAR_Cycles:15,becke_accuracy:Normal,Relativistic:False,h_aniso:True,h_afix:False,add_disp:None,cluster_radius:0,DIIS:0.01,cluster_grow:True,ORCA_SCF_Conv:NoSpherA2SCF,ORCA_SCF_Strategy:EasyConv,ORCA_Solvation:Water,pySCF_Damping:0.6,ORCA_DAMP:False,NoSpherA2_RI_FIT:True,auxiliary_basis:auto_aux,auto_aux_beta:1.7,
 # Stats-GetHklStat:
@@ -19,32 +21,35 @@ import os, glob
 # Weight:True
 # Nr. NPD:1
 
+
 class PostProcess:
     def __init__(self, work_dir):
         self.work_dir = work_dir
-        
+
     def read_refinement_results(self, path_to_result) -> dict:
         """
         Read the refinement results from the specified directory.
         """
         # Check if the file exists
         if not os.path.exists(path_to_result):
-            raise FileNotFoundError(f"Refinement results file not found: {path_to_result}")
-        
+            raise FileNotFoundError(
+                f"Refinement results file not found: {path_to_result}"
+            )
+
         # Read the file
-        with open(path_to_result, 'r') as file:
+        with open(path_to_result, "r") as file:
             lines = file.readlines()
-        
+
         results = {}
         for line in lines:
-            if line.endswith(':\n') or "+++++" in line:
+            if line.endswith(":\n") or "+++++" in line:
                 # This is a header line, skip it
                 continue
             # Split the line into key-value pairs
-            pairs = line.strip().split(',')
+            pairs = line.strip().split(",")
             for pair in pairs:
-                if ':' in pair:
-                    key, value = pair.split(':', 1)
+                if ":" in pair:
+                    key, value = pair.split(":", 1)
                     key = key.strip()
                     value = value.strip()
                     # Convert numeric values to float if possible
@@ -54,32 +59,30 @@ class PostProcess:
                         value = value.strip()
                     results[key] = value
         return results
-    
+
     def collect_results_to_dataframe(self):
-        """Write the results to a pandas DataFrame.
-        """
+        """Write the results to a pandas DataFrame."""
         # Initialize an empty list to store the results
         all_results = []
-        
-        for folder in sorted(glob.glob(os.path.join(self.work_dir, 'job_*')), key=lambda x: int(x.split('_')[-1])):
+
+        for folder in sorted(
+            glob.glob(os.path.join(self.work_dir, "job_*")),
+            key=lambda x: int(x.split("_")[-1]),
+        ):
             # Read the results from each file
-            results = self.read_refinement_results(os.path.join(folder, 'results.txt'))
+            results = self.read_refinement_results(os.path.join(folder, "results.txt"))
             # Append the results to the list
             all_results.append(results)
-            
+
         # print(all_results)
         # Create a DataFrame from the list of results
         df = pd.DataFrame(all_results)
         # Save the DataFrame to a CSV file
-        output_csv = os.path.join(self.work_dir,  'refinement_results.csv')
+        output_csv = os.path.join(self.work_dir, "refinement_results.csv")
         df.to_csv(output_csv, index=False)
-        
+
         print(f"Results saved to {output_csv}")
-            
-            
-        
-            
-            
-pp = PostProcess(r'C:\Users\Lukas\Desktop\DGK_BILDER\TEST2\SISY_TEST')
+
+
+pp = PostProcess(r"C:\Users\Lukas\Desktop\DGK_BILDER\TEST2\SISY_TEST")
 pp.collect_results_to_dataframe()
-        

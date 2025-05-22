@@ -3,14 +3,13 @@ import math
 import os
 import shutil
 import time
-from typing import List, Dict, Union
+from typing import Dict, List, Union
 
 import olex
 import olex_core
 import olx
 from olexFunctions import OlexFunctions
 from PluginTools import PluginTools as PT
-
 from sisy_jobs import SisyphosBenchmarkFile
 
 OV = OlexFunctions()
@@ -43,19 +42,25 @@ OV.SetVar("SISYPHOS_plugin_path", p_path)
 
 
 class BenchJob:
-    def __init__(self, base_work_path, id : int, use_nos2 = False, nos2_params:Union[Dict,None] = None) -> None:
+    def __init__(
+        self,
+        base_work_path,
+        id: int,
+        use_nos2=False,
+        nos2_params: Union[Dict, None] = None,
+    ) -> None:
         if nos2_params is None:
             use_nos2 = False
-        
+
         self.base_work_path = base_work_path
         self.id = id
         self.use_nos2 = use_nos2
         self.nos2_params = nos2_params
-        
+
         self.work_path = os.path.join(self.base_work_path, f"job_{self.id}")
         self.time_needed = 0.0
         self.cycles_needed = 0
-  
+
         self.setup_workspace()
 
     def __str__(self) -> str:
@@ -71,28 +76,25 @@ class BenchJob:
         return f"<FAPJob Object {self.id}>"
 
     def setup_workspace(self) -> None:
-        """ Sets up the workspace for the job
-        """
+        """Sets up the workspace for the job"""
         if not os.path.exists(self.work_path):
             os.makedirs(self.work_path)
         else:
             shutil.rmtree(self.work_path)
             os.makedirs(self.work_path)
-        
+
         data_dir = os.path.dirname(self.base_work_path)
         shutil.copy(glob.glob(os.path.join(data_dir, "*.hkl"))[0], self.work_path)
         shutil.copy(glob.glob(os.path.join(data_dir, "*.ins"))[0], self.work_path)
         self.ins_file = glob.glob(os.path.join(self.work_path, "*.ins"))[0]
-          
+
     def write_log(self, out: str) -> None:
         """Writes a log file to the work path"""
-        with open(
-            os.path.join(self.work_path, "out.log"), "a"
-        ) as log_file:
+        with open(os.path.join(self.work_path, "out.log"), "a") as log_file:
             log_file.write(out + "\n")
             log_file.flush()
             os.fsync(log_file.fileno())
-    
+
     def write_log_header(self, out: str) -> None:
         bar = "=" * 27
         self.write_log(f"{bar} {out} {bar}")
@@ -101,17 +103,17 @@ class BenchJob:
         olx.xf.EndUpdate()
         if OV.HasGUI():
             olx.Refresh()
-                    
-        #ORCA has to be over here, to allow SALTED to replace ORCA as refinement engine
+
+        # ORCA has to be over here, to allow SALTED to replace ORCA as refinement engine
         OV.SetParam("snum.NoSpherA2.source", "ORCA 6.0")
         for key in self.nos2_params:
             OV.SetParam(f"snum.NoSpherA2.{key}", f"{self.nos2_params[key]}")
             self.write_log(f"{key}: {OV.GetParam(f'snum.NoSpherA2.{key}')}")
-        
-        OV.SetParam('snum.NoSpherA2.Calculate',True)
+
+        OV.SetParam("snum.NoSpherA2.Calculate", True)
         OV.SetParam("snum.NoSpherA2.precise_output", True)
         OV.SetParam("snum.NoSpherA2.use_aspherical", True)
-        OV.SetParam('snum.NoSpherA2.h_aniso', True)
+        OV.SetParam("snum.NoSpherA2.h_aniso", True)
         if OV.GetParam("snum.NoSpherA2.multiplicity") == "0":
             self.write_log("I wil set a Multiplicity of 1, since none selected")
             OV.SetParam("snum.NoSpherA2.multiplicity", "1")
@@ -265,12 +267,12 @@ class BenchJob:
     def extract_info(self) -> None:
         try:
             cell_stats = {}
-            for x in ['a', 'b', 'c', 'alpha', 'beta', 'gamma']:
+            for x in ["a", "b", "c", "alpha", "beta", "gamma"]:
                 val = olx.xf.uc.CellEx(x)
                 cell_stats[x] = val
-            cell_stats['volume'] = olx.xf.uc.VolumeEx()
-            cell_stats['Z'] = olx.xf.au.GetZ()
-            cell_stats['Zprime'] = olx.xf.au.GetZprime()
+            cell_stats["volume"] = olx.xf.uc.VolumeEx()
+            cell_stats["Z"] = olx.xf.au.GetZ()
+            cell_stats["Zprime"] = olx.xf.au.GetZprime()
         except Exception as error:
             self.write_log(str(error))
             self.write_log("Failed to extract Cell stats.")
@@ -286,7 +288,6 @@ class BenchJob:
             self.write_log("Failed to extract cif stats!")
             pass
 
-        
         dist_stats = {}
         dist_errs = {}
         R1_all = 0.0
@@ -295,23 +296,25 @@ class BenchJob:
 
         try:
             # This Block will extract the bondlengths from all bonded atoms
-            table_name = ""      
+            table_name = ""
             if self.use_nos2:
                 table_name = str(OV.GetParam("snum.NoSpherA2.file"))
-            from refinement import FullMatrixRefine
+            from cctbx.array_family import flex
+            from cctbx.crystal import calculate_distances
+
             # Even though never used we need this import since it initializes things we need later on
             from olexex import OlexRefinementModel
-            from cctbx.array_family import flex
+            from refinement import FullMatrixRefine
             from scitbx import matrix
-            from cctbx.crystal import calculate_distances
-            #This creates the FMR with normal equations that carries EVERYTHING!
+
+            # This creates the FMR with normal equations that carries EVERYTHING!
             fmr = FullMatrixRefine()
             if table_name != "":
-                #Do not run refinement, simply prepare equations
+                # Do not run refinement, simply prepare equations
                 norm_eq = fmr.run(build_only=True, table_file_name=table_name)
             else:
                 norm_eq = fmr.run(build_only=True)
-            #and build them
+            # and build them
             norm_eq.build_up(False)
             R1_all = norm_eq.r1_factor()[0]
             R1_gt = norm_eq.r1_factor(cutoff_factor=2.0)[0]
@@ -324,20 +327,22 @@ class BenchJob:
             cell_errors = fmr.olx_atoms.getCellErrors()
             cell_vcv = flex.pow2(matrix.diag(cell_errors).as_flex_double_matrix())
             for i in range(3):
-                for j in range(i+1,3):
-                    if (cell_params[i] == cell_params[j] and
-                            cell_errors[i] == cell_errors[j] and
-                            cell_params[i+3] == 90 and
-                            cell_errors[i+3] == 0 and
-                            cell_params[j+3] == 90 and
-                            cell_errors[j+3] == 0):
-                        cell_vcv[i,j] = math.pow(cell_errors[i],2)
-                        cell_vcv[j,i] = math.pow(cell_errors[i],2)
-            #Prepare the Cell Variance covariance matrix, since we need it for error propagation in distances
+                for j in range(i + 1, 3):
+                    if (
+                        cell_params[i] == cell_params[j]
+                        and cell_errors[i] == cell_errors[j]
+                        and cell_params[i + 3] == 90
+                        and cell_errors[i + 3] == 0
+                        and cell_params[j + 3] == 90
+                        and cell_errors[j + 3] == 0
+                    ):
+                        cell_vcv[i, j] = math.pow(cell_errors[i], 2)
+                        cell_vcv[j, i] = math.pow(cell_errors[i], 2)
+            # Prepare the Cell Variance covariance matrix, since we need it for error propagation in distances
             cell_vcv = cell_vcv.matrix_symmetric_as_packed_u()
             sl = xs.scatterers().extract_labels()
             sf = xs.sites_frac()
-            #This is VCV from refinement equations
+            # This is VCV from refinement equations
             cm = norm_eq.covariance_matrix_and_annotations().matrix
             pm = xs.parameter_map()
             pat = connectivity_full.pair_asu_table
@@ -348,11 +353,12 @@ class BenchJob:
                 sf,
                 covariance_matrix=cm,
                 cell_covariance_matrix=cell_vcv,
-                parameter_map=pm)
+                parameter_map=pm,
+            )
 
-            #The distances only exist once we iterate over them! Therefore build them and save them in this loop
-            for i,d in enumerate(distances):
-                bond = sl[d.i_seq]+"-"+sl[d.j_seq]
+            # The distances only exist once we iterate over them! Therefore build them and save them in this loop
+            for i, d in enumerate(distances):
+                bond = sl[d.i_seq] + "-" + sl[d.j_seq]
                 dist_stats[bond] = distances.distances[i]
                 dist_errs[bond] = math.sqrt(distances.variances[i])
 
@@ -362,39 +368,58 @@ class BenchJob:
             self.write_log(str(error))
             self.write_log("Failed to extract distances")
             pass
-        
-        #Write the results to a file
-        with open(os.path.join(self.work_path,f"results.txt"), "a") as out:
+
+        # Write the results to a file
+        with open(os.path.join(self.work_path, f"results.txt"), "a") as out:
             out.write("NoSpherA2_Dict:\n")
             if self.use_nos2:
                 for key in self.nos2_params:
                     out.write(str(key) + ":" + str(self.nos2_params[key]) + ",")
-                    
+
             out.write("\nStats-GetHklStat:\n")
             for key in hkl_stats:
                 out.write(str(key) + ":" + str(hkl_stats[key]) + ",")
-            out.write("\nCell-Stats:\n")  
+            out.write("\nCell-Stats:\n")
             for key in cell_stats:
                 out.write(str(key) + ":" + str(cell_stats[key]) + ",")
-            out.write("\nCIF-stats:\n")  
+            out.write("\nCIF-stats:\n")
             for key in cif_stats:
                 out.write(str(key) + ":" + str(cif_stats[key]) + ",")
             out.write("\nrefine_dict:\n")
-            for key in ["max_peak", "max_hole", "res_rms", "goof", "max_shift_over_esd", "hooft_str"]:
-                out.write(str(key) + ":" + str(OV.GetParam("snum.refinement."+key)) + ",")
-            out.write("R1_all:" + str(R1_all) + ",R1_gt:" + str(R1_gt) + ",wR2:" + str(wR2) + ",cycles:"+ str(self.cycles_needed) + ",time:" + str(self.time_needed) + ",")
+            for key in [
+                "max_peak",
+                "max_hole",
+                "res_rms",
+                "goof",
+                "max_shift_over_esd",
+                "hooft_str",
+            ]:
+                out.write(
+                    str(key) + ":" + str(OV.GetParam("snum.refinement." + key)) + ","
+                )
+            out.write(
+                "R1_all:"
+                + str(R1_all)
+                + ",R1_gt:"
+                + str(R1_gt)
+                + ",wR2:"
+                + str(wR2)
+                + ",cycles:"
+                + str(self.cycles_needed)
+                + ",time:"
+                + str(self.time_needed)
+                + ","
+            )
             out.write("\nbondlengths:\n")
             for key in dist_stats:
                 out.write(str(key) + ":" + str(dist_stats[key]) + ",")
             out.write("\nbonderrors:\n")
             for key in dist_stats:
                 out.write(str(key) + ":" + str(dist_errs[key]) + ",")
-            out.write("\nWeight:"+str(OV.GetParam('sisyphos.update_weight')))
+            out.write("\nWeight:" + str(OV.GetParam("sisyphos.update_weight")))
             out.write(f"\nNr. NPD:{olx.xf.au.NPDCount()}")
             out.write("\n+++++++++++++++++++\n")
 
-    
-        
 
 nos_params = [
     "basis_name",
@@ -432,43 +457,42 @@ class SISYPHOS(PT):
         self.p_scope = p_scope
         self.p_htm = p_htm
         self.p_img = p_img
-        self.deal_with_phil(operation='read')
+        self.deal_with_phil(operation="read")
         self.print_version_date()
         if not from_outside:
             self.setup_gui()
-            
-        OV.registerFunction(self.setBasePath,True,"SISYPHOS")
-        OV.registerFunction(self.setWorkPath,True,"SISYPHOS")
-        OV.registerFunction(self.run,True,"SISYPHOS")
+
+        OV.registerFunction(self.setBasePath, True, "SISYPHOS")
+        OV.registerFunction(self.setWorkPath, True, "SISYPHOS")
+        OV.registerFunction(self.run, True, "SISYPHOS")
         self.base_path = os.getenv("SISYPHOS_base_path")
         self.work_path = os.getenv("SISYPHOS_work_path")
-        
-        #Get the index of the job to be processed, if not set, use -1 to indicate that all jobs should be processed
+
+        # Get the index of the job to be processed, if not set, use -1 to indicate that all jobs should be processed
         self.sisy_job_idx = int(os.getenv("SISYPHOS_job_idx", default=-1))
-   
+
         self.nos2_options = {}
         self.use_nosphera2 = False
-        
+
     def setBasePath(self) -> None:
         """Select Directory of the hkl and ins file which should be processed.
 
 
-                Raises:
-                        None
-                """
+        Raises:
+                None
+        """
         out = olex.f('choosedir("Choose your hkl and ins folder")')
         if out == " ":
             print("No directory choosen!")
         else:
             self.base_path = out
             print(f"Your data lies at:\n{out}")
-        OV.SetParam('sisyphos.base_path', out)  
-        
+        OV.SetParam("sisyphos.base_path", out)
 
     def setWorkPath(self) -> None:
         """Choose the directory where the benchmark jobs should be saved. This directory should also contain the benchmark file.
-            Returns:
-                    list: List of FAPJob objects
+        Returns:
+                list: List of FAPJob objects
 
         """
         out = olex.f('choosedir("Choose your benchmark folder")')
@@ -479,22 +503,25 @@ class SISYPHOS(PT):
             print(f"Your benchmark data lies at:\n{out}")
         OV.SetParam("sisyphos.work_path", out)
 
-
     def init_sisy_jobs(self) -> list:
         sisy_jobs = SisyphosBenchmarkFile(self.work_path)
-  
-        #Check if only one job is specified (happens mostly when running in headless mode)
-        if self.sisy_job_idx != -1:#
+
+        # Check if only one job is specified (happens mostly when running in headless mode)
+        if self.sisy_job_idx != -1:  #
             if sisy_jobs.is_finished(self.sisy_job_idx):
                 print(f"Job {self.sisy_job_idx} already finished, skipping")
                 return []
 
             tmp_job_dict = self.nos2_options.copy()
             tmp_job_dict.update(sisy_jobs[self.sisy_job_idx])
-            #Check if a IAM job should be performed
+            # Check if a IAM job should be performed
             if "IAM" in tmp_job_dict:
                 return [BenchJob(self.work_path, self.sisy_job_idx)]
-            return [BenchJob(self.work_path, self.sisy_job_idx, self.use_nosphera2, tmp_job_dict)]
+            return [
+                BenchJob(
+                    self.work_path, self.sisy_job_idx, self.use_nosphera2, tmp_job_dict
+                )
+            ]
 
         job_list = []
         for i, job in enumerate(sisy_jobs):
@@ -504,16 +531,15 @@ class SISYPHOS(PT):
 
             tmp_job_dict = self.nos2_options.copy()
             tmp_job_dict.update(job)
-   
+
             if "IAM" in tmp_job_dict:
                 job_list.append(BenchJob(self.work_path, i))
             else:
-                job_list.append(BenchJob(self.work_path, i, self.use_nosphera2, tmp_job_dict))
-   
+                job_list.append(
+                    BenchJob(self.work_path, i, self.use_nosphera2, tmp_job_dict)
+                )
+
         return job_list
-
-
-
 
     def run(self) -> None:
         """Run a refinement, using the sisyphos plugin.
@@ -531,11 +557,13 @@ class SISYPHOS(PT):
 
         self.nos2_options["full_HAR"] = True
         self.nos2_options["Max_HAR_Cycles"] = 15
-        
+
         job_list = self.init_sisy_jobs()
 
         for job in job_list:
-            print(f"--------------------------Running job {job.id}-----------------------------")
+            print(
+                f"--------------------------Running job {job.id}-----------------------------"
+            )
             job.run()
 
 
