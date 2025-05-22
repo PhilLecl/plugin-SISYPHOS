@@ -482,13 +482,14 @@ class SISYPHOS(PT):
 
     def init_sisy_jobs(self) -> list:
         sisy_jobs = SisyphosBenchmarkFile(self.work_path)
-        tmp_job_dict = self.nos2_options.copy()
   
         #Check if only one job is specified (happens mostly when running in headless mode)
         if self.sisy_job_idx != -1:#
             if sisy_jobs.is_finished(self.sisy_job_idx):
                 print(f"Job {self.sisy_job_idx} already finished, skipping")
                 return []
+
+            tmp_job_dict = self.nos2_options.copy()
             tmp_job_dict.update(sisy_jobs[self.sisy_job_idx])
             #Check if a IAM job should be performed
             if "IAM" in tmp_job_dict:
@@ -500,7 +501,8 @@ class SISYPHOS(PT):
             if sisy_jobs.is_finished(i):
                 print(f"Job {i} already finished, skipping")
                 continue
-    
+
+            tmp_job_dict = self.nos2_options.copy()
             tmp_job_dict.update(job)
    
             if "IAM" in tmp_job_dict:
